@@ -1,0 +1,63 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.example.tagged_v1.MainActivity" >
+    <Button
+        android:id="@+id/clear_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/send_btn"
+        android:layout_alignBottom="@+id/send_btn"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="80dp"
+        android:background="@android:color/transparent"
+        android:textColor="@drawable/custom_button"
+        android:text="@string/button_clear"
+        android:textSize="15sp" />
+
+    <Button
+        android:id="@+id/send_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/url_editText"
+        android:layout_marginLeft="80dp"
+        android:background="@android:color/transparent"
+        android:text="@string/button_send"
+        android:textColor="@drawable/custom_button"
+        android:textSize="15sp" />
+
+    <EditText
+        android:id="@+id/url_editText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:layout_centerHorizontal="true"
+        android:inputType="textUri"
+        android:text="@string/editText_msg"
+        android:textSize="15sp" />
+
+    <TextView
+        android:id="@+id/reqHeadersOrig_textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/clear_btn"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="64dp"
+        android:textSize="12sp"
+        android:gravity="center"
+        android:text="Original Request Headers" />
+
+    <TextView
+        android:id="@+id/responseStr_textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/reqHeadersOrig_textView"
+        android:layout_alignParentBottom="true"
+        android:layout_alignRight="@+id/reqHeadersOrig_textView"
+        android:layout_marginBottom="92dp"
+        android:gravity="center"
+        android:textSize="12sp"
+        android:text="Server Output" />
+</RelativeLayout>
