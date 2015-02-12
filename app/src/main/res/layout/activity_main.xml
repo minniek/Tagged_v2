@@ -3,30 +3,41 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.example.tagged_v1.MainActivity" >
+
     <Button
         android:id="@+id/clear_btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignBaseline="@+id/send_btn"
-        android:layout_alignBottom="@+id/send_btn"
-        android:layout_alignParentRight="true"
-        android:layout_marginRight="80dp"
         android:background="@android:color/transparent"
         android:textColor="@drawable/custom_button"
+        android:textSize="12sp"
         android:text="@string/button_clear"
-        android:textSize="15sp" />
+        android:layout_alignTop="@+id/compare_btn"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true" />
 
     <Button
         android:id="@+id/send_btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:layout_below="@+id/url_editText"
-        android:layout_marginLeft="80dp"
         android:background="@android:color/transparent"
         android:text="@string/button_send"
         android:textColor="@drawable/custom_button"
-        android:textSize="15sp" />
+        android:textSize="12sp"
+        android:layout_alignTop="@+id/compare_btn"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+    <Button
+        android:id="@+id/compare_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        android:textColor="@drawable/custom_button"
+        android:textSize="12sp"
+        android:text="Compare"
+        android:layout_below="@+id/url_editText"
+        android:layout_centerHorizontal="true" />
 
     <EditText
         android:id="@+id/url_editText"
@@ -42,22 +53,31 @@
         android:id="@+id/reqHeadersOrig_textView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/clear_btn"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="64dp"
+        android:layout_marginTop="57dp"
         android:textSize="12sp"
-        android:gravity="center"
-        android:text="Original Request Headers" />
+        android:gravity="left"
+        android:layout_below="@+id/compare_btn"
+        android:layout_centerHorizontal="true"
+        android:text="Original Request Headers"/>
 
     <TextView
         android:id="@+id/responseStr_textView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/reqHeadersOrig_textView"
-        android:layout_alignParentBottom="true"
-        android:layout_alignRight="@+id/reqHeadersOrig_textView"
-        android:layout_marginBottom="92dp"
-        android:gravity="center"
+        android:gravity="left"
         android:textSize="12sp"
-        android:text="Server Output" />
+        android:layout_marginTop="61dp"
+        android:layout_below="@+id/reqHeadersOrig_textView"
+        android:layout_centerHorizontal="true"
+        android:text="Modified Request Headers" />
+
+    <TextView
+        android:id="@+id/diff_textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:gravity="left"
+        android:text="Diff Output"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true" />
 </RelativeLayout>
