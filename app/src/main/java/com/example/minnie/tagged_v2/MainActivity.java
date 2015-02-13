@@ -43,13 +43,11 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     TextView responseTxt, reqHeadersOrigTxt, diffTxt;
 
     // Server, Proxy variables
-    final String serverIP = "192.168.1.4";
-    final String serverPage = "server_v1.php";
-    final String proxyIP = "192.168.16.133";
-    final int proxyPort = 1717;
+    final String serverIP = "192.168.1.4"; final String serverPage = "server_v1.php";
+    final String proxyIP = "192.168.1.11"; final int proxyPort = 1717;
 
     // Display values
-    String responseStr = ""; // Will display result in TextView "responseTxt"
+    String responseStr = "";
     JSONObject origHeadersJSON;
     JSONObject modHeadersJSON;
     StringBuilder diffHeaders;
@@ -138,26 +136,12 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 }
 
                 // Compare original with modified...display the diff
-                // Assumption: modHeadersMap always contains more entries than origHeaderMap
                 for (Map.Entry<String, String> modHeader : modHeadersMap.entrySet()) {
                     if ((!origHeadersMap.containsKey(modHeader.getKey())) ||
                             (!origHeadersMap.containsValue(modHeader.getValue()))) {
                         diffHeaders.append(modHeader.getKey() + ":" + modHeader.getValue() + "\n");
                     }
                 }
-
-                /*
-                // TODO Get rid of nested loop to avoid dupes
-                // Compare original with modified...display the diff
-                for (Map.Entry<String, String> modHeader : modHeadersMap.entrySet()) {
-                    for (Map.Entry<String, String> origHeader : origHeadersMap.entrySet()) {
-                        if ((!origHeadersMap.entrySet().contains(modHeader)) ||
-                                (origHeadersMap.entrySet().contains(modHeader.getValue()) != origHeadersMap.entrySet().contains(origHeader.getValue()))){
-                            diffHeaders.append(modHeader.getKey() + ":" + modHeader.getValue() + "\n");
-                        }
-                    }
-                }
-                */
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -186,11 +170,11 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         }
 
         private String connectToURL(String url) throws IOException {
-
             // Force HTTP requests to go through Proxy
             URL myURL = new URL(url);
             Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyIP, proxyPort));
             HttpURLConnection conn = (HttpURLConnection)myURL.openConnection(proxy);
+            //HttpURLConnection conn = (HttpURLConnection)myURL.openConnection();
 
             // Connect to URL and display HTML of Tagged Server
             try {
