@@ -187,7 +187,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 conn.addRequestProperty("Accept-Language", "en-US,en;q=0.8");
                 conn.addRequestProperty("Cache-Control", "max-age=123456789");
                 //conn.addRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.111 Safari/537.36");
-                //reqHeadersOrig = conn.getRequestProperties(); // returns Map<String, List<String>> data structure
+                //reqHeadersOrig = conn.getRequestProperties(); // returns Map<String, List<String>>
 
                 // Create JSON object that stores original request headers
                 origHeadersJSON = new JSONObject();
