@@ -42,16 +42,14 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     EditText urlTxt;
     TextView responseTxt, reqHeadersOrigTxt, diffTxt;
 
-    // Server, Proxy variables
-    final String serverIP = "192.168.1.4"; final String serverPage = "server_v1.php";
-    final String proxyIP = "192.168.1.11"; final int proxyPort = 1717;
+    // PHP Server, Python Proxy variables
+    final String serverIP = "155.41.46.89"; final String serverPage = "server_v1.php";
+    final String proxyIP = "155.41.124.7"; final int proxyPort = 1717;
 
-    // Display values
     String responseStr = "";
-    JSONObject origHeadersJSON;
-    JSONObject modHeadersJSON;
+    Map<String,String> origHeadersMap;
+    JSONObject origHeadersJSON, modHeadersJSON;
     StringBuilder diffHeaders;
-
     String TAG = "Tagged_v2";
 
     @Override
@@ -59,6 +57,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Map widgets to XML
         send = (Button)findViewById(R.id.send_btn);
         clear = (Button)findViewById(R.id.clear_btn);
         compare = (Button)findViewById(R.id.compare_btn);
@@ -67,12 +66,12 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         reqHeadersOrigTxt = (TextView)findViewById(R.id.reqHeadersOrig_textView);
         diffTxt = (TextView)findViewById(R.id.diff_textView);
 
-        // Set onClickListener event to buttons
-        send.setOnClickListener(this);
-        clear.setOnClickListener(this);
-        compare.setOnClickListener(this);
+        // Set onClickListener event and get rid of default settings on buttons
+        send.setOnClickListener(this); send.setTransformationMethod(null);
+        clear.setOnClickListener(this); clear.setTransformationMethod(null);
+        compare.setOnClickListener(this); compare.setTransformationMethod(null);
 
-        // Preload URL to connect to Tagged! server that is running on localhost
+        // Preload URL to connect to Tagged server
         urlTxt.setText("http://" + serverIP + "/" + serverPage, TextView.BufferType.EDITABLE);
     }
 
@@ -99,53 +98,45 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         }
 
         if (v == compare) {
-            // TODO After debugging, move entire code to onPostExecute (tested on 2/12/15 @ 1:25AM, didn't crash)
             diffHeaders = new StringBuilder();
-
             try {
                 modHeadersJSON = new JSONObject(responseStr);
-                Log.d(TAG, "origHeadersJSON.toString(): " + origHeadersJSON.toString()); // DEBUGGING
                 Log.d(TAG, "modHeadersJSON.toString(): " + modHeadersJSON.toString()); // DEBUGGING
 
                 // TODO Use Gson or Jackson to convert JSONObject to Map...
-                // Convert JSONObject to Map to facilitate parsing
-                Map<String,String> origHeadersMap = new HashMap<>();
-                Iterator origIter = origHeadersJSON.keys();
-                while(origIter.hasNext()) {
-                    String key = (String) origIter.next();
-                    try {
-                        String value = origHeadersJSON.getString(key);
-                        origHeadersMap.put(key, value);
-                        Log.d(TAG, "origHeadersMap: " + origHeadersMap.toString()); // DEBUGGING
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                }
-
                 Map<String,String> modHeadersMap = new HashMap<>();
                 Iterator modIter = modHeadersJSON.keys();
                 while(modIter.hasNext()) {
-                    String key = (String) modIter.next();
+                    String key = (String)modIter.next();
                     try {
                         String value = modHeadersJSON.getString(key);
                         modHeadersMap.put(key, value);
-                        Log.d(TAG, "modHeadersMap: " + modHeadersMap.toString()); // DEBUGGING
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
                 }
+                Log.d(TAG, "modHeadersMap.toString(): " + modHeadersMap.toString()); // DEBUGGING
 
                 // Compare original with modified...display the diff
+                // Recall: a map will not contain duplicate keys
                 for (Map.Entry<String, String> modHeader : modHeadersMap.entrySet()) {
-                    if ((!origHeadersMap.containsKey(modHeader.getKey())) ||
-                            (!origHeadersMap.containsValue(modHeader.getValue()))) {
+                    if ((!origHeadersMap.containsKey(modHeader.getKey())) || (!origHeadersMap.containsValue(modHeader.getValue()))) { // Case One: maps do not have same keys or same values
                         diffHeaders.append(modHeader.getKey() + ":" + modHeader.getValue() + "\n");
+                    } else if (origHeadersMap.containsKey(modHeader.getKey())) { // Case Two: if both maps share the same key but have different values
+                        if (!origHeadersMap.get(modHeader.getKey()).contentEquals(modHeader.getValue())){
+                            diffHeaders.append(modHeader.getKey() + ":" + modHeader.getValue() + "\n");
+                        }
                     }
+                }
+
+                // If no difference is found...
+                if (origHeadersMap.equals(modHeadersMap)) { // Equivalent to "map1.entrySet().equals(map2.entrySet())
+                    diffHeaders.append("No differences found.");
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
+                diffHeaders.append("ERROR Could not make JSONObject with \"responseStr\"");
             }
-
             diffTxt.setText(diffHeaders);
         }
     }
@@ -153,13 +144,12 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     private class StartAsyncTask extends AsyncTask<String, Void, String> {
         @Override
         protected String doInBackground(String... urls) {
-            // params comes from the execute() call: params[0] is the url
+            // Params come from the execute() call: params[0] is the url
             try {
                 connectToURL(urls[0]);
                 return responseStr; // return value to be used in onPostExecute
             } catch (IOException e) {
-                responseStr = "Error: could not connect to URL. Please check URL";
-                return responseStr;
+                return responseStr = "Error: could not connect to URL. Please check URL";
             }
         }
 
@@ -174,36 +164,53 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             URL myURL = new URL(url);
             Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyIP, proxyPort));
             HttpURLConnection conn = (HttpURLConnection)myURL.openConnection(proxy);
-            //HttpURLConnection conn = (HttpURLConnection)myURL.openConnection();
 
-            // Connect to URL and display HTML of Tagged Server
+            // Connect to URL and display HTML of Tagged PHP server
             try {
-                conn.setReadTimeout(20*1000); // milliseconds
-                conn.setConnectTimeout(20*1000); // milliseconds
+                conn.setReadTimeout(10*1000); // milliseconds
+                conn.setConnectTimeout(10*1000); // milliseconds
 
-                // Set request headers
-                conn.addRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
-                conn.addRequestProperty("Accept-Encoding", "gzip, deflate, sdch");
-                conn.addRequestProperty("Accept-Language", "en-US,en;q=0.8");
-                conn.addRequestProperty("Cache-Control", "max-age=123456789");
-                //conn.addRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.111 Safari/537.36");
-                //reqHeadersOrig = conn.getRequestProperties(); // returns Map<String, List<String>>
-
-                // Create JSON object that stores original request headers
+                // Create JSON object to store original request headers
+                // NOTE: JSON objects do not allow duplicate keys and will override existing keys
                 origHeadersJSON = new JSONObject();
                 try {
                     origHeadersJSON.put("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
                     origHeadersJSON.put("Accept-Encoding", "gzip, deflate, sdch");
                     origHeadersJSON.put("Accept-Language", "en-US,en;q=0.8");
                     origHeadersJSON.put("Cache-Control", "max-age=123456789");
+                    origHeadersJSON.put("Connection", "close");
+                    origHeadersJSON.put("Connection", "open"); // TESTER - this will override the previous key-value assignment
+                    origHeadersJSON.put("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.111 Safari/537.36");
                 }  catch (JSONException e) {
                     e.printStackTrace();
                 }
+                Log.d(TAG, "origHeadersJSON.toString(): " + origHeadersJSON.toString()); // DEBUGGING
 
-                // Connect to URL
+                // Convert JSON Object to HashMap
+                origHeadersMap = new HashMap<>();
+                Iterator origIter = origHeadersJSON.keys();
+                while(origIter.hasNext()) {
+                    String key = (String)origIter.next();
+                    try {
+                        String value = origHeadersJSON.getString(key);
+                        Log.d(TAG, "origHeadersJSON.get(key): " + origHeadersJSON.get(key).toString());
+                        origHeadersMap.put(key, value);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+                Log.d(TAG, "origHeadersMap.toString(): " + origHeadersMap.toString()); // DEBUGGING
+
+                // Set request headers
+                // NOTE: addRequestProperty method will NOT override existing properties (i.e. duplicate header-value pairs are allowed)
+                for (Map.Entry<String, String> header : origHeadersMap.entrySet()) {
+                   conn.addRequestProperty(header.getKey(), header.getValue());
+                }
+                //conn.addRequestProperty("Accept-Language", "DUPE"); // TESTER - duplicate header will be added
+                //Log.d(TAG, "getRequestProperties.toString()" + conn.getRequestProperties().toString()); // DEBUGGING - returns Map<String, List<String>>
+
+                // Connect to URL to read and display HTML of Tagged Server (should show modified request headers made by Tagged Proxy)
                 conn.connect();
-
-                // Read and display HTML of Tagged Server (should also output modified request headers made by Tagged Proxy...)
                 InputStream htmlContent = conn.getInputStream();
                 BufferedReader reader = new BufferedReader(new InputStreamReader(htmlContent, "UTF-8"));
                 StringBuilder content = new StringBuilder();
@@ -211,19 +218,16 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 while ((line = reader.readLine()) != null) {
                     content.append(line);
                 }
-                responseStr = content.toString();
 
-                // Close connection and return server's output
+                // Close connection and return PHP server's HTML
                 conn.disconnect();
-                return responseStr;
+                return responseStr = content.toString();
             } catch (MalformedURLException e) {
                 e.printStackTrace();
-                responseStr = "ERROR MalformedURLException caught: " + e;
-                return responseStr;
+                return responseStr = "ERROR MalformedURLException caught: " + e;
             } catch (IOException e) {
                 e.printStackTrace();
-                responseStr = "ERROR IOException caught: " + e;
-                return responseStr;
+                return responseStr = "ERROR IOException caught: " + e;
             }
         }
     }

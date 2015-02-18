@@ -4,5 +4,16 @@
     <string name="action_settings">Settings</string>
     <string name="button_send">Send</string>
     <string name="button_clear">Clear</string>
+    <string name="button_compare">Compare</string>
     <string name="editText_msg">Enter URL</string>
+    <string name="origHeaderLabel">"Original Request Headers"</string>
+    <string name="modHeaderLabel">"Modified Request Headers"</string>
+    <string name="diffHeaderLabel">"Diff Output"</string>
+    <color name="ink">#05061C</color>
+    <color name="neonRed">#FF3155</color>
+    <color name="medGray">#767172</color>
+    <color name="darkGray">#2B2929</color>
+    <color name="mint">#33EE88</color>
+    <color name="orangesicle">#FBBC5C</color>
+    <color name="sunshine">#FFFF66</color>
 </resources>

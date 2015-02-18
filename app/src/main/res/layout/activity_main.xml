@@ -2,19 +2,22 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.example.tagged_v1.MainActivity" >
-
+    android:background="@color/darkGray"
+    tools:context="com.example.tagged_v1.MainActivity">
     <Button
         android:id="@+id/clear_btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@android:color/transparent"
         android:textColor="@drawable/custom_button"
-        android:textSize="12sp"
+        android:textSize="15sp"
         android:text="@string/button_clear"
-        android:layout_alignTop="@+id/compare_btn"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true" />
+        android:fontFamily="monospace"
+        android:layout_above="@+id/origHeadersRow"
+        android:layout_toRightOf="@+id/compare_btn"
+        android:layout_toEndOf="@+id/compare_btn"
+        android:layout_marginLeft="22dp"
+        android:layout_marginStart="22dp" />
 
     <Button
         android:id="@+id/send_btn"
@@ -22,11 +25,14 @@
         android:layout_height="wrap_content"
         android:background="@android:color/transparent"
         android:text="@string/button_send"
+        android:fontFamily="monospace"
         android:textColor="@drawable/custom_button"
-        android:textSize="12sp"
-        android:layout_alignTop="@+id/compare_btn"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true" />
+        android:textSize="15sp"
+        android:layout_above="@+id/origHeadersRow"
+        android:layout_toLeftOf="@+id/compare_btn"
+        android:layout_toStartOf="@+id/compare_btn"
+        android:layout_marginRight="22dp"
+        android:layout_marginEnd="22dp" />
 
     <Button
         android:id="@+id/compare_btn"
@@ -34,50 +40,104 @@
         android:layout_height="wrap_content"
         android:background="@android:color/transparent"
         android:textColor="@drawable/custom_button"
-        android:textSize="12sp"
-        android:text="Compare"
+        android:textSize="15sp"
+        android:fontFamily="monospace"
         android:layout_below="@+id/url_editText"
-        android:layout_centerHorizontal="true" />
+        android:layout_centerHorizontal="true"
+        android:text="@string/button_compare" />
 
     <EditText
         android:id="@+id/url_editText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
+        android:textColor="@color/medGray"
+        android:fontFamily="monospace"
         android:layout_centerHorizontal="true"
         android:inputType="textUri"
         android:text="@string/editText_msg"
         android:textSize="15sp" />
 
-    <TextView
-        android:id="@+id/reqHeadersOrig_textView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="57dp"
-        android:textSize="12sp"
-        android:gravity="left"
+    <TableLayout
+        android:id="@+id/origHeadersRow"
+        android:layout_height="wrap_content" android:layout_width="wrap_content"
+        android:layout_marginTop="25dp"
         android:layout_below="@+id/compare_btn"
-        android:layout_centerHorizontal="true"
-        android:text="Original Request Headers"/>
-
-    <TextView
-        android:id="@+id/responseStr_textView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:gravity="left"
-        android:textSize="12sp"
-        android:layout_marginTop="61dp"
-        android:layout_below="@+id/reqHeadersOrig_textView"
-        android:layout_centerHorizontal="true"
-        android:text="Modified Request Headers" />
-
-    <TextView
-        android:id="@+id/diff_textView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textSize="12sp"
-        android:gravity="left"
-        android:text="Diff Output"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true" />
+        android:layout_centerHorizontal="true">
+        <TableRow
+            android:id="@+id/tableRow1"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content">
+            <TextView
+                android:id="@+id/origHeaderLabel"
+                android:text="@string/origHeaderLabel"
+                android:textSize="14sp"
+                android:layout_gravity="center"
+                android:textColor="@color/medGray"
+                android:fontFamily="monospace"/>
+            </TableRow>
+        <TableRow
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:paddingBottom="10sp">
+            <TextView
+                android:id="@+id/reqHeadersOrig_textView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:fontFamily="monospace"
+                android:gravity="start"
+                android:textColor="@color/mint" />
+        </TableRow>
+        <TableRow
+            android:id="@+id/tableRow2"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content">
+            <TextView
+                android:id="@+id/modHeaderLabel"
+                android:text="@string/modHeaderLabel"
+                android:textSize="14sp"
+                android:layout_gravity="center"
+                android:textColor="@color/medGray"
+                android:fontFamily="monospace"/>
+            </TableRow>
+        <TableRow
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:paddingBottom="10sp">
+            <TextView
+                android:id="@+id/responseStr_textView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="start"
+                android:textSize="12sp"
+                android:fontFamily="monospace"
+                android:textColor="@color/orangesicle"/>
+        </TableRow>
+        <TableRow
+            android:id="@+id/tableRow3"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content">
+            <TextView
+                android:id="@+id/diffHeaderLabel"
+                android:text="@string/diffHeaderLabel"
+                android:textSize="14sp"
+                android:layout_gravity="center"
+                android:textColor="@color/medGray"
+                android:fontFamily="monospace"/>
+        </TableRow>
+        <TableRow
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:paddingBottom="10sp">
+            <TextView
+                android:id="@+id/diff_textView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:fontFamily="monospace"
+                android:textColor="@color/neonRed"
+                android:gravity="start" />
+        </TableRow>
+    </TableLayout>
 </RelativeLayout>
