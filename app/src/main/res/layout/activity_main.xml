@@ -1,5 +1,10 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/darkGray"
+    tools:context="com.example.tagged_v1.MainActivity">
+<RelativeLayout
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/darkGray"
@@ -55,7 +60,6 @@
         android:fontFamily="monospace"
         android:layout_centerHorizontal="true"
         android:inputType="textUri"
-        android:text="@string/editText_msg"
         android:textSize="15sp" />
 
     <TableLayout
@@ -140,4 +144,5 @@
                 android:gravity="start" />
         </TableRow>
     </TableLayout>
-</RelativeLayout>
+    </RelativeLayout>
+</ScrollView>

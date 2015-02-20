@@ -86,6 +86,7 @@
     <orderEntry type="library" exported="" name="gson-2.2.4" level="project" />
     <orderEntry type="library" exported="" name="jackson-core-asl-1.8.3" level="project" />
     <orderEntry type="library" exported="" name="jackson-mapper-asl-1.8.3" level="project" />
+    <orderEntry type="library" exported="" name="guava-16.0.1" level="project" />
   </component>
 </module>
 
