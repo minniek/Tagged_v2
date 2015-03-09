@@ -14,6 +14,7 @@
     <color name="medGray">#767172</color>
     <color name="darkGray">#2B2929</color>
     <color name="mint">#33EE88</color>
+    <color name="white">#FFFFFF</color>
     <color name="orangesicle">#FBBC5C</color>
     <color name="sunshine">#FFFF66</color>
 </resources>

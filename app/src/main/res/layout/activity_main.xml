@@ -4,145 +4,134 @@
     android:layout_height="match_parent"
     android:background="@color/darkGray"
     tools:context="com.example.tagged_v1.MainActivity">
-<RelativeLayout
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/darkGray"
-    tools:context="com.example.tagged_v1.MainActivity">
-    <Button
-        android:id="@+id/clear_btn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@android:color/transparent"
-        android:textColor="@drawable/custom_button"
-        android:textSize="15sp"
-        android:text="@string/button_clear"
-        android:fontFamily="monospace"
-        android:layout_above="@+id/origHeadersRow"
-        android:layout_toRightOf="@+id/compare_btn"
-        android:layout_toEndOf="@+id/compare_btn"
-        android:layout_marginLeft="22dp"
-        android:layout_marginStart="22dp" />
-
-    <Button
-        android:id="@+id/send_btn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@android:color/transparent"
-        android:text="@string/button_send"
-        android:fontFamily="monospace"
-        android:textColor="@drawable/custom_button"
-        android:textSize="15sp"
-        android:layout_above="@+id/origHeadersRow"
-        android:layout_toLeftOf="@+id/compare_btn"
-        android:layout_toStartOf="@+id/compare_btn"
-        android:layout_marginRight="22dp"
-        android:layout_marginEnd="22dp" />
-
-    <Button
-        android:id="@+id/compare_btn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@android:color/transparent"
-        android:textColor="@drawable/custom_button"
-        android:textSize="15sp"
-        android:fontFamily="monospace"
-        android:layout_below="@+id/url_editText"
-        android:layout_centerHorizontal="true"
-        android:text="@string/button_compare" />
-
-    <EditText
-        android:id="@+id/url_editText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:textColor="@color/medGray"
-        android:fontFamily="monospace"
-        android:layout_centerHorizontal="true"
-        android:inputType="textUri"
-        android:textSize="15sp" />
-
-    <TableLayout
-        android:id="@+id/origHeadersRow"
-        android:layout_height="wrap_content" android:layout_width="wrap_content"
-        android:layout_marginTop="25dp"
-        android:layout_below="@+id/compare_btn"
-        android:layout_centerHorizontal="true">
-        <TableRow
-            android:id="@+id/tableRow1"
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/darkGray"
+        tools:context="com.example.tagged_v1.MainActivity">
+        <Button
+            android:id="@+id/clear_btn"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_width="wrap_content">
-            <TextView
-                android:id="@+id/origHeaderLabel"
-                android:text="@string/origHeaderLabel"
-                android:textSize="14sp"
-                android:layout_gravity="center"
-                android:textColor="@color/medGray"
-                android:fontFamily="monospace"/>
+            android:background="@android:color/transparent"
+            android:textColor="@drawable/custom_button"
+            android:textSize="15sp"
+            android:text="@string/button_clear"
+            android:fontFamily="monospace"
+            android:layout_alignTop="@+id/verify_btn"
+            android:layout_toRightOf="@+id/verify_btn"
+            android:layout_toEndOf="@+id/verify_btn"
+            android:layout_marginLeft="40dp"
+            android:layout_marginStart="40dp" />
+
+        <Button
+            android:id="@+id/send_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            android:text="@string/button_send"
+            android:fontFamily="monospace"
+            android:textColor="@drawable/custom_button"
+            android:textSize="15sp"
+            android:layout_marginTop="83dp"
+            android:layout_alignParentTop="true"
+            android:layout_toLeftOf="@+id/verify_btn"
+            android:layout_toStartOf="@+id/verify_btn"
+            android:layout_marginRight="36dp"
+            android:layout_marginEnd="36dp" />
+
+        <Button
+            android:id="@+id/verify_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            android:text="Verify"
+            android:fontFamily="monospace"
+            android:textColor="@drawable/custom_button"
+            android:textSize="15sp"
+            android:layout_alignTop="@+id/send_btn"
+            android:layout_centerHorizontal="true" />
+
+        <TableLayout
+            android:id="@+id/origHeadersRow"
+            android:layout_height="wrap_content" android:layout_width="wrap_content"
+            android:layout_marginTop="200dp"
+            android:layout_centerHorizontal="true">
+            <TableRow
+                android:id="@+id/tableRow1"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content">
+                <TextView
+                    android:id="@+id/origHeaderLabel"
+                    android:text="@string/origHeaderLabel"
+                    android:textSize="14sp"
+                    android:layout_gravity="center"
+                    android:textColor="@color/medGray"
+                    android:fontFamily="monospace"/>
             </TableRow>
-        <TableRow
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:paddingBottom="10sp">
-            <TextView
-                android:id="@+id/reqHeadersOrig_textView"
-                android:layout_width="wrap_content"
+            <TableRow
                 android:layout_height="wrap_content"
-                android:textSize="12sp"
-                android:fontFamily="monospace"
-                android:gravity="start"
-                android:textColor="@color/mint" />
-        </TableRow>
-        <TableRow
-            android:id="@+id/tableRow2"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content">
-            <TextView
-                android:id="@+id/modHeaderLabel"
-                android:text="@string/modHeaderLabel"
-                android:textSize="14sp"
-                android:layout_gravity="center"
-                android:textColor="@color/medGray"
-                android:fontFamily="monospace"/>
+                android:layout_width="wrap_content"
+                android:paddingBottom="10sp">
+                <TextView
+                    android:id="@+id/reqHeadersOrig_textView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    android:fontFamily="monospace"
+                    android:gravity="start"
+                    android:textColor="@color/mint" />
             </TableRow>
-        <TableRow
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:paddingBottom="10sp">
-            <TextView
-                android:id="@+id/responseStr_textView"
-                android:layout_width="wrap_content"
+            <TableRow
+                android:id="@+id/tableRow2"
                 android:layout_height="wrap_content"
-                android:gravity="start"
-                android:textSize="12sp"
-                android:fontFamily="monospace"
-                android:textColor="@color/orangesicle"/>
-        </TableRow>
-        <TableRow
-            android:id="@+id/tableRow3"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content">
-            <TextView
-                android:id="@+id/diffHeaderLabel"
-                android:text="@string/diffHeaderLabel"
-                android:textSize="14sp"
-                android:layout_gravity="center"
-                android:textColor="@color/medGray"
-                android:fontFamily="monospace"/>
-        </TableRow>
-        <TableRow
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:paddingBottom="10sp">
-            <TextView
-                android:id="@+id/diff_textView"
-                android:layout_width="wrap_content"
+                android:layout_width="wrap_content">
+                <TextView
+                    android:id="@+id/modHeaderLabel"
+                    android:text="@string/modHeaderLabel"
+                    android:textSize="14sp"
+                    android:layout_gravity="center"
+                    android:textColor="@color/medGray"
+                    android:fontFamily="monospace"/>
+            </TableRow>
+            <TableRow
                 android:layout_height="wrap_content"
-                android:textSize="12sp"
-                android:fontFamily="monospace"
-                android:textColor="@color/neonRed"
-                android:gravity="start" />
-        </TableRow>
-    </TableLayout>
+                android:layout_width="wrap_content"
+                android:paddingBottom="10sp">
+                <TextView
+                    android:id="@+id/responseStr_textView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="start"
+                    android:textSize="12sp"
+                    android:fontFamily="monospace"
+                    android:textColor="@color/orangesicle"/>
+            </TableRow>
+            <TableRow
+                android:id="@+id/tableRow3"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content">
+                <TextView
+                    android:id="@+id/diffHeaderLabel"
+                    android:text="@string/diffHeaderLabel"
+                    android:textSize="14sp"
+                    android:layout_gravity="center"
+                    android:textColor="@color/medGray"
+                    android:fontFamily="monospace"/>
+            </TableRow>
+            <TableRow
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:paddingBottom="10sp">
+                <TextView
+                    android:id="@+id/diff_textView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    android:fontFamily="monospace"
+                    android:textColor="@color/neonRed"
+                    android:gravity="start" />
+            </TableRow>
+        </TableLayout>
     </RelativeLayout>
 </ScrollView>
