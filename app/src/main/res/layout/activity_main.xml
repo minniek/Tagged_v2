@@ -2,13 +2,22 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/darkGray"
+    android:background="@color/medGray"
     tools:context="com.example.tagged_v1.MainActivity">
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/darkGray"
+        android:background="@color/medGray"
         tools:context="com.example.tagged_v1.MainActivity">
+
+        <android.support.v7.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:minHeight="?attr/actionBarSize"
+            android:background="@color/moodyBlue"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+        </android.support.v7.widget.Toolbar>
+
         <Button
             android:id="@+id/clear_btn"
             android:layout_width="wrap_content"
@@ -18,11 +27,9 @@
             android:textSize="15sp"
             android:text="@string/button_clear"
             android:fontFamily="monospace"
-            android:layout_alignTop="@+id/verify_btn"
-            android:layout_toRightOf="@+id/verify_btn"
-            android:layout_toEndOf="@+id/verify_btn"
-            android:layout_marginLeft="40dp"
-            android:layout_marginStart="40dp" />
+            android:layout_alignTop="@+id/send_btn"
+            android:layout_alignRight="@+id/header_table"
+            android:layout_alignEnd="@+id/header_table" />
 
         <Button
             android:id="@+id/send_btn"
@@ -33,68 +40,68 @@
             android:fontFamily="monospace"
             android:textColor="@drawable/custom_button"
             android:textSize="15sp"
-            android:layout_marginTop="83dp"
-            android:layout_alignParentTop="true"
-            android:layout_toLeftOf="@+id/verify_btn"
-            android:layout_toStartOf="@+id/verify_btn"
-            android:layout_marginRight="36dp"
-            android:layout_marginEnd="36dp" />
+            android:layout_marginTop="43dp"
+            android:layout_below="@+id/toolbar"
+            android:layout_centerHorizontal="true" />
 
         <Button
-            android:id="@+id/verify_btn"
+            android:id="@+id/viewHeaders_btn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@android:color/transparent"
-            android:text="Verify"
+            android:text="View Headers"
             android:fontFamily="monospace"
             android:textColor="@drawable/custom_button"
             android:textSize="15sp"
             android:layout_alignTop="@+id/send_btn"
-            android:layout_centerHorizontal="true" />
+            android:layout_alignLeft="@+id/header_table"
+            android:layout_alignStart="@+id/header_table" />
 
         <TableLayout
-            android:id="@+id/origHeadersRow"
+            android:id="@+id/header_table"
             android:layout_height="wrap_content" android:layout_width="wrap_content"
             android:layout_marginTop="200dp"
             android:layout_centerHorizontal="true">
             <TableRow
-                android:id="@+id/tableRow1"
+                android:id="@+id/origHeaderLabel_row"
                 android:layout_height="wrap_content"
                 android:layout_width="wrap_content">
                 <TextView
                     android:id="@+id/origHeaderLabel"
-                    android:text="@string/origHeaderLabel"
+                    android:text="Headers Sent to Tagged Server"
                     android:textSize="14sp"
-                    android:layout_gravity="center"
-                    android:textColor="@color/medGray"
+                    android:layout_gravity="left"
+                    android:textColor="@color/white"
                     android:fontFamily="monospace"/>
             </TableRow>
             <TableRow
+                android:id="@+id/origHeader_textView_row"
                 android:layout_height="wrap_content"
                 android:layout_width="wrap_content"
                 android:paddingBottom="10sp">
                 <TextView
-                    android:id="@+id/reqHeadersOrig_textView"
+                    android:id="@+id/origHeader_textView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="12sp"
                     android:fontFamily="monospace"
                     android:gravity="start"
-                    android:textColor="@color/mint" />
+                    android:textColor="@color/sage" />
             </TableRow>
             <TableRow
-                android:id="@+id/tableRow2"
+                android:id="@+id/modHeaderLabel_row"
                 android:layout_height="wrap_content"
                 android:layout_width="wrap_content">
                 <TextView
                     android:id="@+id/modHeaderLabel"
-                    android:text="@string/modHeaderLabel"
+                    android:text="Headers Received by Tagged Server"
                     android:textSize="14sp"
-                    android:layout_gravity="center"
-                    android:textColor="@color/medGray"
+                    android:layout_gravity="left"
+                    android:textColor="@color/white"
                     android:fontFamily="monospace"/>
             </TableRow>
             <TableRow
+                android:id="@+id/modHeader_textView_row"
                 android:layout_height="wrap_content"
                 android:layout_width="wrap_content"
                 android:paddingBottom="10sp">
@@ -108,28 +115,29 @@
                     android:textColor="@color/orangesicle"/>
             </TableRow>
             <TableRow
-                android:id="@+id/tableRow3"
+                android:id="@+id/diffHeader_row"
                 android:layout_height="wrap_content"
                 android:layout_width="wrap_content">
                 <TextView
                     android:id="@+id/diffHeaderLabel"
-                    android:text="@string/diffHeaderLabel"
+                    android:text="Headers Modified by Proxy Server"
                     android:textSize="14sp"
-                    android:layout_gravity="center"
-                    android:textColor="@color/medGray"
+                    android:layout_gravity="left"
+                    android:textColor="@color/white"
                     android:fontFamily="monospace"/>
             </TableRow>
             <TableRow
+                android:id="@+id/diffHeader_textView_row"
                 android:layout_height="wrap_content"
                 android:layout_width="wrap_content"
                 android:paddingBottom="10sp">
                 <TextView
-                    android:id="@+id/diff_textView"
+                    android:id="@+id/diffHeader_textView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="12sp"
                     android:fontFamily="monospace"
-                    android:textColor="@color/neonRed"
+                    android:textColor="@color/salmon"
                     android:gravity="start" />
             </TableRow>
         </TableLayout>

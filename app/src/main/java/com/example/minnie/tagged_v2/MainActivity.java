@@ -1,24 +1,33 @@
-/* Tagged - Detect HTTP Request Header Modification
+/* Tagged - Detect HTTP Request Header Modifications
  * References:
  * http://developer.android.com/training/basics/network-ops/connecting.html
  * http://www.compiletimeerror.com/2013/01/why-and-how-to-use-asynctask.html#.VMKb5P7F95A
+ * http://stackoverflow.com/questions/11532989/android-decrypt-rsa-text-using-a-public-key-stored-in-a-file
+ * http://docs.oracle.com/javase/tutorial/security/apisign/vstep4.html
  *
  */
 
 package com.example.minnie.tagged_v2;
 
-import android.app.Activity;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Base64;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TableLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.google.common.collect.MapDifference;
+import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 
 import org.json.JSONException;
@@ -42,17 +51,18 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
 //import java.net.Proxy;
 
-public class MainActivity extends Activity implements View.OnClickListener {
+public class MainActivity extends ActionBarActivity implements View.OnClickListener {
 
     // Declare widgets
-    Button send, verify, clear;
-    TextView responseTxt, reqHeadersOrigTxt, diffTxt;
+    Button sendBtn, viewHeadersBtn, clearBtn;
+    TextView responseTv, origHeaderTv, diffTv;
+    TableLayout headerTable;
+    Toolbar toolbar;
 
     // Tagged server variables
-    final String serverIP = "155.41.123.98"; final String serverPage = "server_v1.php";
+    final String serverIP = "192.168.1.6"; final String serverPage = "server_v1.php";
 
     /*// Uncomment to force app to use Python Proxy
     final String proxyIP = "192.168.42.1"; final int proxyPort = 1717;
@@ -68,22 +78,52 @@ public class MainActivity extends Activity implements View.OnClickListener {
         setContentView(R.layout.activity_main);
 
         // Map widgets to XML
-        send = (Button) findViewById(R.id.send_btn);
-        verify = (Button) findViewById(R.id.verify_btn);
-        clear = (Button) findViewById(R.id.clear_btn);
-        responseTxt = (TextView) findViewById(R.id.responseStr_textView);
-        reqHeadersOrigTxt = (TextView) findViewById(R.id.reqHeadersOrig_textView);
-        diffTxt = (TextView) findViewById(R.id.diff_textView);
+        sendBtn = (Button)findViewById(R.id.send_btn);
+        viewHeadersBtn = (Button)findViewById(R.id.viewHeaders_btn);
+        clearBtn = (Button)findViewById(R.id.clear_btn);
+        responseTv = (TextView)findViewById(R.id.responseStr_textView);
+        origHeaderTv = (TextView)findViewById(R.id.origHeader_textView);
+        diffTv = (TextView)findViewById(R.id.diffHeader_textView);
+        headerTable = (TableLayout)findViewById(R.id.header_table);
+        toolbar = (Toolbar)findViewById(R.id.toolbar);
 
         // Set onClickListener event and get rid of default settings on buttons
-        send.setOnClickListener(this); send.setTransformationMethod(null);
-        clear.setOnClickListener(this); clear.setTransformationMethod(null);
-        verify.setOnClickListener(this); verify.setTransformationMethod(null);
+        sendBtn.setOnClickListener(this); sendBtn.setTransformationMethod(null);
+        clearBtn.setOnClickListener(this); clearBtn.setTransformationMethod(null);
+        viewHeadersBtn.setOnClickListener(this); viewHeadersBtn.setTransformationMethod(null);
+
+        // Toolbar settings
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
+        toolbar.setLogo(R.drawable.tagged_logo_v6);
+
+        // Initial widget settings
+        viewHeadersBtn.setEnabled(false); viewHeadersBtn.setVisibility(View.INVISIBLE);
+        clearBtn.setEnabled(false); clearBtn.setVisibility(View.INVISIBLE);
+        headerTable.setEnabled(false); headerTable.setVisibility(View.INVISIBLE);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu (i.e. adds items to the action bar)
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.send_btn:
+                //Toast.makeText(getApplicationContext(), "Testing 123...", Toast.LENGTH_LONG).show();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     // Assign tasks for buttons
     public void onClick(View v) {
-        if (v == send) {
+        if (v == sendBtn) {
             // Check for network connection
             String taggedURL = "http://" + serverIP + "/" + serverPage;
             ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -91,27 +131,37 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
             // If network is present, start AsyncTask to connect to given URL
             if ((nwInfo != null) && (nwInfo.isConnected())) {
-                new StartAsyncTask().execute(taggedURL);
+                new StartAsyncTask().execute(taggedURL); // Returns "responseStr"
             } else {
-                responseTxt.setText("ERROR No network connection detected.");
+                responseTv.setText("ERROR No network connection detected.");
             }
-        }
 
-        if (v == verify) {
-            // Extract the signature from modHeadersMap and remove it from map
+            // Begin signature verification process
+            // StartAsyncTask().execute(taggedURL) returns "responseStr"
+            // Create modified header map with "responseStr" to extract "Auth" header, which contains the digital signature
+            modHeadersMap = new TreeMap<>();
+            try {
+                JSONObject modHeadersJSON= new JSONObject(responseStr);
+                //Log.d(TAG, "modHeadersJSON.toString(): " + modHeadersJSON.toString());
+                modHeadersMap = new Gson().fromJson(modHeadersJSON.toString(), modHeadersMap.getClass());
+                //Log.d(TAG, "modHeadersMap.toString(): " + modHeadersMap.toString());
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
+            // Extract the digital signature from modHeadersMap
             String digSig = "";
-            boolean isVerified;
-
             for (Map.Entry<String, String> modHeader : modHeadersMap.entrySet()) {
                 if (modHeader.getKey().equals("Auth")) {
                     digSig = modHeader.getValue();
                 }
             }
             //modHeadersMap.remove("Auth");
-            Log.d(TAG, "Digital signature: " + digSig);
-            Log.d(TAG, "Modified Headers minus Auth: " + modHeadersMap.toString());
+            //Log.d(TAG, "Digital signature: " + digSig);
+            //Log.d(TAG, "Modified Headers minus Auth: " + modHeadersMap.toString());
 
-            // Extract Tagged server's public key from res and create PublicKey instance
+            // Extract Tagged server's public key from "public_key.pem" in res/raw and create PublicKey instance
+            boolean isVerified;
             try {
                 InputStream is = this.getResources().openRawResource(R.raw.public_key);
                 BufferedReader br = new BufferedReader(new InputStreamReader(is));
@@ -135,19 +185,18 @@ public class MainActivity extends Activity implements View.OnClickListener {
                 KeyFactory kf = KeyFactory.getInstance("RSA");
                 PublicKey pubKey = kf.generatePublic(spec);
 
-                // Verify signature
+                // Verify digital signature from Tagged server
                 try {
                     Signature sig = Signature.getInstance("SHA256withRSA");
                     sig.initVerify(pubKey);
 
-                    /*  "responseStr" includes the data and format that was used to create the digital signature in the Tagged server
-                     *  Need to remove the "Auth" header
-                     */
-                    //
-                    Log.d(TAG, "responseStr before: " + responseStr);
-                    responseStr = responseStr.replaceAll(",\"Auth\":.*$", "}");
-                    Log.d(TAG, "responseStr after: " + responseStr);
-                    sig.update(responseStr.getBytes());
+                    // "responseStr" contains the data received from Tagged server
+                    // Remove the "Auth" header before processing
+                    String responseStrEdited = "";  // Will contain data received from Tagged server, minus the "Auth" header
+                    //Log.d(TAG, "responseStr before removing "Auth": " + responseStr);
+                    responseStrEdited = responseStr.replaceAll(",\"Auth\":.*$", "}");
+                    //Log.d(TAG, "responseStr after removing "Auth": " + responseStr);
+                    sig.update(responseStrEdited.getBytes());
 
                     isVerified = sig.verify(Base64.decode(digSig, Base64.DEFAULT));
                     Log.d(TAG, "Signature verified?: " + isVerified);
@@ -158,32 +207,57 @@ public class MainActivity extends Activity implements View.OnClickListener {
                 e.printStackTrace();
             }
 
+            // If signature is verified, alert user and give option to view headers
             if (isVerified = true) {
-                StringBuilder diffHeaders = new StringBuilder();
+                Toast.makeText(getApplicationContext(), "Signature verified!", Toast.LENGTH_SHORT).show();
+                sendBtn.setEnabled(false); sendBtn.setVisibility(View.INVISIBLE);
+                viewHeadersBtn.setEnabled(true); viewHeadersBtn.setVisibility(View.VISIBLE);
+                clearBtn.setEnabled(true); clearBtn.setVisibility(View.VISIBLE);
 
-                // Start comparing and mark the modified/new headers
-                for (Map.Entry<String, String> modHeader : modHeadersMap.entrySet()) {
-                    // Case One: maps do not have same keys or same values
-                    if ((!origHeadersMap.containsKey(modHeader.getKey())) || (!origHeadersMap.containsValue(modHeader.getValue()))) {
-                        diffHeaders.append(modHeader.getKey() + ":" + modHeader.getValue() + "\n");
-                        // Case Two: both maps share the same key but have different values
-                    } else if (origHeadersMap.containsKey(modHeader.getKey())) {
-                        if (!origHeadersMap.get(modHeader.getKey()).contentEquals(modHeader.getValue())) {
-                            diffHeaders.append(modHeader.getKey() + ":" + modHeader.getValue() + "\n");
-                        }
-                    }
-                    diffTxt.setText(diffHeaders);
-                }
             } else {
-                diffTxt.setText("Signature verification failed!.");
+                Toast.makeText(getApplicationContext(), "Signature NOT verified!", Toast.LENGTH_SHORT).show();
             }
         }
 
-        if (v == clear) {
+        if (v == viewHeadersBtn) {
+            viewHeadersBtn.setEnabled(true); viewHeadersBtn.setVisibility(View.INVISIBLE);
+            clearBtn.setEnabled(true); clearBtn.setVisibility(View.VISIBLE);
+            headerTable.setEnabled(true); headerTable.setVisibility(View.VISIBLE);
+
+            // Display original headers
+            for (Map.Entry<String, String> entry : origHeadersMap.entrySet()) {
+                origHeaderTv.append(entry.getKey() + ": " + entry.getValue() + "\n");
+            }
+
+            // Display modified headers
+            for (Map.Entry<String, String> entry : modHeadersMap.entrySet()) {
+                responseTv.append(entry.getKey() + ": " + entry.getValue() + "\n");
+            }
+
+            // Compare and display the modified headers
+            StringBuilder diffHeaders = new StringBuilder();
+            modHeadersMap.remove("Auth");
+            //Log.d(TAG, modHeadersMap.toString());
+            MapDifference<String, String> mapDiff = Maps.difference(origHeadersMap, modHeadersMap);
+            //Log.d(TAG, mapDiff.entriesOnlyOnRight().toString());
+            diffHeaders.append(mapDiff.entriesOnlyOnRight().toString().replace("{", "").replace("}", ""));
+            diffTv.setText(diffHeaders);
+
+            if (diffHeaders.toString().equals("")) {
+                diffTv.setText("No header modification was detected.");
+            }
+        }
+
+        if (v == clearBtn) {
             responseStr = "";
-            responseTxt.setText("");
-            reqHeadersOrigTxt.setText("");
-            diffTxt.setText("");
+            responseTv.setText("");
+            origHeaderTv.setText("");
+            diffTv.setText("");
+
+            viewHeadersBtn.setEnabled(false); viewHeadersBtn.setVisibility(View.INVISIBLE);
+            sendBtn.setEnabled(true); sendBtn.setVisibility(View.VISIBLE);
+            clearBtn.setEnabled(false); clearBtn.setVisibility(View.INVISIBLE);
+            headerTable.setEnabled(false); headerTable.setVisibility(View.INVISIBLE);
         }
     }
 
@@ -201,22 +275,23 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
         // onPostExecute displays the results of the AsyncTask
         protected void onPostExecute(String responseStr) {
-            // Display original headers
-            for (Map.Entry<String, String> entry : origHeadersMap.entrySet()) {
-                reqHeadersOrigTxt.append(entry.getKey() + ": " + entry.getValue() + "\n");
-            }
-
-            // Display modified headers
-            for (Map.Entry<String, String> entry : modHeadersMap.entrySet()) {
-                responseTxt.append(entry.getKey() + ": " + entry.getValue() + "\n");
+            // Make map of modified headers using responseStr
+            modHeadersMap = new TreeMap<>();
+            try {
+                JSONObject modHeadersJSON= new JSONObject(responseStr);
+                modHeadersMap = new Gson().fromJson(modHeadersJSON.toString(), modHeadersMap.getClass());
+                //Log.d(TAG, "modHeadersJSON.toString(): " + modHeadersJSON.toString());
+                //Log.d(TAG, "modHeadersMap.toString(): " + modHeadersMap.toString());
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
         }
 
         private String connectToURL(String url) throws IOException {
             URL myURL = new URL(url);
-            HttpURLConnection conn = (HttpURLConnection) myURL.openConnection();
+            HttpURLConnection conn = (HttpURLConnection)myURL.openConnection();
 
-            /*// Uncomment to "force" app to use proxy
+            /*// Uncomment to "force" app to use Python proxy
             Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyIP, proxyPort));
             HttpURLConnection conn = (HttpURLConnection) myURL.openConnection(proxy);
             */
@@ -244,10 +319,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
                 }
                 //Log.d(TAG, "origHeadersMap.toString(): " + origHeadersMap.toString());
 
-                // Connect to URL and get Tagged server content
+                // Connect to URL, get Tagged server content, then disconnect
                 conn.connect();
                 InputStream taggedResponse = conn.getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(taggedResponse, "UTF-8"));
+                BufferedReader reader = new BufferedReader(new InputStreamReader(taggedResponse));
                 StringBuilder taggedContent = new StringBuilder();
                 String line;
                 while ((line = reader.readLine()) != null) {
@@ -255,18 +330,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
                 }
                 responseStr = taggedContent.toString();
                 conn.disconnect();
-
-                // Make map of modified headers
-                modHeadersMap = new TreeMap<>();
-                try {
-                    JSONObject modHeadersJSON= new JSONObject(responseStr);
-                    //Log.d(TAG, "modHeadersJSON.toString(): " + modHeadersJSON.toString());
-                    modHeadersMap = new Gson().fromJson(modHeadersJSON.toString(), modHeadersMap.getClass());
-                    //Log.d(TAG, "modHeadersMap.toString(): " + modHeadersMap.toString());
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-
                 Log.d(TAG, "Tagged server echoed the following response string: " + responseStr);
                 return responseStr;
             } catch (MalformedURLException e) {

@@ -11,10 +11,14 @@
     <string name="diffHeaderLabel">"Diff Output"</string>
     <color name="ink">#05061C</color>
     <color name="neonRed">#FF3155</color>
-    <color name="medGray">#767172</color>
-    <color name="darkGray">#2B2929</color>
-    <color name="mint">#33EE88</color>
+    <color name="medGray">#3E3B3B</color>
+    <color name="darkGray">#201F1F</color>
+    <color name="lightGray">#605a5a</color>
+    <color name="sage">#A0C395</color>
     <color name="white">#FFFFFF</color>
     <color name="orangesicle">#FBBC5C</color>
     <color name="sunshine">#FFFF66</color>
+    <color name="slateBlue">#468499</color>
+    <color name="salmon">#FA8072</color>
+    <color name="moodyBlue">#468499</color>
 </resources>
