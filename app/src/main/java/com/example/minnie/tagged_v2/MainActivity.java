@@ -4,7 +4,7 @@
  * http://www.compiletimeerror.com/2013/01/why-and-how-to-use-asynctask.html#.VMKb5P7F95A
  * http://stackoverflow.com/questions/11532989/android-decrypt-rsa-text-using-a-public-key-stored-in-a-file
  * http://docs.oracle.com/javase/tutorial/security/apisign/vstep4.html
- *
+ * http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/MapDifference.html
  */
 
 package com.example.minnie.tagged_v2;
@@ -21,7 +21,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TableLayout;
@@ -30,7 +29,6 @@ import android.widget.Toast;
 
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Table;
 import com.google.gson.Gson;
 
 import org.json.JSONException;
@@ -59,15 +57,14 @@ import java.util.TreeMap;
 public class MainActivity extends ActionBarActivity implements View.OnClickListener {
 
     // Declare widgets
-    ImageButton sendBtn, startoverBtn;
-    Button viewHeadersBtn;
+    ImageButton sendBtn, viewHeadersBtn, startoverBtn;
     TextView responseTv, origHeaderTv, diffTv, sigVerInfoTv, headerDifferenceInfoTv;
-    ImageView sigVerIcon;
-    TableLayout sigVerTable, headerTable;
+    ImageView sigVerIcon, headerDiffIcon;
+    TableLayout sigVerTable, headersTable;
     Toolbar toolbar;
 
     // Tagged server variables
-    final String serverIP = "168.122.14.115"; final String serverPage = "server_v1.php";
+    final String serverIP = "155.41.125.181"; final String serverPage = "server_v1.php";
 
     /*// Uncomment to force app to use Python Proxy
     final String proxyIP = "192.168.42.1"; final int proxyPort = 1717;
@@ -82,40 +79,45 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Map widgets to XML
+        // Buttons
         sendBtn = (ImageButton)findViewById(R.id.send_btn);
-        viewHeadersBtn = (Button)findViewById(R.id.viewHeaders_btn);
+        viewHeadersBtn = (ImageButton)findViewById(R.id.viewheaders_btn);
         startoverBtn = (ImageButton)findViewById(R.id.startover_btn);
+        sendBtn.setOnClickListener(this);
+        startoverBtn.setOnClickListener(this);
+        viewHeadersBtn.setOnClickListener(this);
+
+        // TextViews
         responseTv = (TextView)findViewById(R.id.responseStr_textView);
         origHeaderTv = (TextView)findViewById(R.id.origHeader_textView);
         diffTv = (TextView)findViewById(R.id.diffHeader_textView);
-        sigVerIcon = (ImageView)findViewById(R.id.sigVerIcon);
         sigVerInfoTv = (TextView)findViewById(R.id.sigVerInfo);
-        sigVerTable = (TableLayout)findViewById(R.id.sigVer_table);
-        headerTable = (TableLayout)findViewById(R.id.header_table);
         headerDifferenceInfoTv = (TextView)findViewById(R.id.headerDifferenceInfo_textView);
+
+        // ImageViews
+        sigVerIcon = (ImageView)findViewById(R.id.sigVerIcon);
+        headerDiffIcon = (ImageView)findViewById(R.id.headerDiffIcon);
+
+        // Tables
+        sigVerTable = (TableLayout)findViewById(R.id.sigVer_table);
+        headersTable = (TableLayout)findViewById(R.id.headers_table);
+
+        // Toolbar
         toolbar = (Toolbar)findViewById(R.id.toolbar);
-
-        // Set onClickListener event and get rid of default settings on buttons
-        sendBtn.setOnClickListener(this);
-        startoverBtn.setOnClickListener(this);
-        viewHeadersBtn.setOnClickListener(this); viewHeadersBtn.setTransformationMethod(null);
-
-        // Toolbar settings
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
         toolbar.setLogo(R.drawable.tagged_logo_v7);
 
-        // Initial widget settings
+        // Initial settings (appearance)
         viewHeadersBtn.setEnabled(false); viewHeadersBtn.setVisibility(View.INVISIBLE);
         startoverBtn.setEnabled(false); startoverBtn.setVisibility(View.INVISIBLE);
         sigVerTable.setEnabled(false); sigVerTable.setVisibility(View.INVISIBLE);
-        headerTable.setEnabled(false); headerTable.setVisibility(View.INVISIBLE);
+        headersTable.setEnabled(false); headersTable.setVisibility(View.INVISIBLE);
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu (i.e. adds items to the action bar)
+        // Inflate the menu (i.e. adds items to the tool bar)
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return super.onCreateOptionsMenu(menu);
     }
@@ -124,7 +126,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.about:
-                Toast.makeText(getApplicationContext(), "@ Copyright Minnie Kim", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "Source @ https://github.com/minniek/Tagged_v2", Toast.LENGTH_LONG).show();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -151,23 +153,23 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             viewHeadersBtn.setEnabled(false); viewHeadersBtn.setVisibility(View.INVISIBLE);
             startoverBtn.setEnabled(true); startoverBtn.setVisibility(View.VISIBLE);
             sigVerTable.setEnabled(false); sigVerTable.setVisibility(View.INVISIBLE);
-            headerTable.setEnabled(true); headerTable.setVisibility(View.VISIBLE);
+            headersTable.setEnabled(true); headersTable.setVisibility(View.VISIBLE);
 
             // Display original headers
             for (Map.Entry<String, String> entry : origHeadersMap.entrySet()) {
                 origHeaderTv.append(entry.getKey() + ": " + entry.getValue() + "\n");
             }
 
+            // Display headers received by Tagged server and the diff
             if (modHeadersMap == null) {
                 responseTv.append("ERROR: Could not fetch modified headers!");
-            }
-            // Display modified headers
-            else {
+            } else {
                 for (Map.Entry<String, String> entry : modHeadersMap.entrySet()) {
                     responseTv.append(entry.getKey() + ": " + entry.getValue() + "\n");
                 }
 
                 // Compare and display the modified headers
+                // entriesOnlyOnRight(): returns map that contains keys that are only present in the right map (i.e. modHeadersMap)
                 StringBuilder diffHeaders = new StringBuilder();
                 modHeadersMap.remove("Auth");
                 //Log.d(TAG, modHeadersMap.toString());
@@ -177,7 +179,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 diffTv.setText(diffHeaders);
 
                 if (diffHeaders.toString().equals("")) {
-                    diffTv.setText("No header modifications were detected :)");
+                    diffTv.setText("No header modifications were detected!");
                 }
             }
         }
@@ -195,7 +197,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             viewHeadersBtn.setEnabled(false); viewHeadersBtn.setVisibility(View.INVISIBLE);
             startoverBtn.setEnabled(false); startoverBtn.setVisibility(View.INVISIBLE);
             sigVerTable.setEnabled(false); sigVerTable.setVisibility(View.INVISIBLE);
-            headerTable.setEnabled(false); headerTable.setVisibility(View.INVISIBLE);
+            headersTable.setEnabled(false); headersTable.setVisibility(View.INVISIBLE);
         }
     }
 
@@ -266,13 +268,13 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 return responseStr = "ERROR MalformedURLException caught: " + e;
             } catch (IOException e) {
                 e.printStackTrace();
+                //testFlag = true;
                 return responseStr = "ERROR IOException caught: " + e;
             }
         }
     }
 
     public void verifySignature(String responseStr) {
-
         // Create map of modified headers using responseStr
         modHeadersMap = new TreeMap<>();
         try {
@@ -297,17 +299,17 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         try {
             InputStream is = this.getResources().openRawResource(R.raw.public_key);
             BufferedReader br = new BufferedReader(new InputStreamReader(is));
-            StringBuilder pubKeySB = new StringBuilder();
+            StringBuilder pubKeySb = new StringBuilder();
             String line;
             try {
                 while ((line = br.readLine()) != null)
-                    pubKeySB.append(line);
+                    pubKeySb.append(line);
             } catch (IOException e) {
                 e.printStackTrace();
             }
 
             // Remove header and footer
-            String pubKeyStr = pubKeySB.toString();
+            String pubKeyStr = pubKeySb.toString();
             pubKeyStr = pubKeyStr.replace("-----BEGIN PUBLIC KEY-----", "");
             pubKeyStr = pubKeyStr.replace("-----END PUBLIC KEY-----", "");
             //Log.d(TAG, "Public key string: " + pubKeyStr);
@@ -327,9 +329,8 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 String responseStrEdited = "";  // Will contain data received from Tagged server, minus the "Auth" header
                 //Log.d(TAG, "responseStr before removing \"Auth\": " + responseStr);
                 responseStrEdited = responseStr.replaceAll(",\"Auth\":.*$", "}");
-                //Log.d(TAG, "responseStr after removing \"Auth\": " + responseStrEdited);
+                Log.d(TAG, "responseStr after removing \"Auth\": " + responseStrEdited);
                 sig.update(responseStrEdited.getBytes());
-                //sig.update(responseStr.getBytes()); // [TESTER] Uncomment to test unverified signature
                 isVerified = sig.verify(Base64.decode(digSig, Base64.DEFAULT));
                 Log.d(TAG, "Signature verified?: " + isVerified);
 
@@ -338,34 +339,34 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                     // Enable + show sig verified info
                     sigVerTable.setEnabled(true); sigVerTable.setVisibility(View.VISIBLE);
                     sigVerIcon.setImageResource(R.drawable.verified_icon);
-                    sigVerInfoTv.setText("Tagged server signature verified!");
+                    sigVerInfoTv.setText("Tagged server signature verified.");
 
                     // Determine if there are any header modifications
                     checkRequestHeaderDifference(origHeadersMap, modHeadersMap);
 
-                    // Enable view headers button
+                    // Enable view headers and start over buttons
                     viewHeadersBtn.setEnabled(true); viewHeadersBtn.setVisibility(View.VISIBLE);
+                    startoverBtn.setEnabled(true); startoverBtn.setVisibility(View.VISIBLE);
 
-                    // Disable + hide send button, start over button, and unverified table
+                    // Disable + hide send button
                     sendBtn.setEnabled(false); sendBtn.setVisibility(View.INVISIBLE);
-                    startoverBtn.setEnabled(false); startoverBtn.setVisibility(View.INVISIBLE);
                 }
 
                 if (isVerified == false) {
                     // Enable + show sig unverified info and view headers button
                     sigVerTable.setEnabled(true); sigVerTable.setVisibility(View.VISIBLE);
                     sigVerIcon.setImageResource(R.drawable.unverified_icon);
-                    sigVerInfoTv.setText("Tagged server signature NOT verified!");
+                    sigVerInfoTv.setText("Tagged server signature NOT verified.");
 
                     // Determine if there are any header modifications
                     checkRequestHeaderDifference(origHeadersMap, modHeadersMap);
 
-                    // Enable view headers button
+                    // Enable view headers and start over buttons
                     viewHeadersBtn.setEnabled(true); viewHeadersBtn.setVisibility(View.VISIBLE);
+                    startoverBtn.setEnabled(true); startoverBtn.setVisibility(View.VISIBLE);
 
-                    // Disable + hide send button, start over button, and unverified table
+                    // Disable + hide send button
                     sendBtn.setEnabled(false); sendBtn.setVisibility(View.INVISIBLE);
-                    startoverBtn.setEnabled(false); startoverBtn.setVisibility(View.INVISIBLE);
                 }
             } catch (SignatureException e) {
                 e.printStackTrace();
@@ -377,25 +378,29 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
     public void  checkRequestHeaderDifference(Map<String, String> map1, Map<String, String> map2) {
         if (map1 == null) {
-            headerDifferenceInfoTv.setText("ERROR: Could not process original request headers...");
+            headerDifferenceInfoTv.setText("ERROR: Could not process original request headers.");
         } else if (map2 == null ) {
-            headerDifferenceInfoTv.setText("ERROR: Could not process request headers received by Tagged server...");
+            headerDifferenceInfoTv.setText("ERROR: Could not process request headers received by Tagged server.");
         } else {
-            // Compare maps
+            // Compare maps and check difference
             StringBuilder diffHeaders = new StringBuilder();
             TreeMap<String, String> map2edited = new TreeMap<>(map2);
             map2edited.remove("Auth");
             //Log.d(TAG, "map2edited: " + map2edited.toString());
+
+            // Create MapDifference object and call entriesOnlyOnRight(leftmap, rightmap)
+            // entriesOnlyOnRight(): returns map containing the entries from the right map whose keys are not present in the left map
             MapDifference<String, String> mapDiff = Maps.difference(map1, map2edited);
             //Log.d(TAG, mapDiff.entriesOnlyOnRight().toString());
             diffHeaders.append(mapDiff.entriesOnlyOnRight());
             Log.d(TAG, "Diff string: " + diffHeaders.toString());
 
             if (diffHeaders.toString().contentEquals("{}")) {
-                //diffTv.setText("No header modification was detected.");
-                headerDifferenceInfoTv.setText("No header modifications were detected!");
+                headerDiffIcon.setImageResource(R.drawable.verified_icon);
+                headerDifferenceInfoTv.setText("No header modifications were detected.");
             } else {
-                headerDifferenceInfoTv.setText("Header modifications were detected!");
+                headerDiffIcon.setImageResource(R.drawable.unverified_icon);
+                headerDifferenceInfoTv.setText("Header modifications were detected.");
             }
         }
     }

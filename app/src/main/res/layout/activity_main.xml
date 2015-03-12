@@ -15,35 +15,42 @@
             android:minHeight="?attr/actionBarSize"
             android:background="@color/moodyBlue"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="match_parent">
         </android.support.v7.widget.Toolbar>
-
-        <ImageButton
-            android:id="@+id/startover_btn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/startover_btn_states"
-            android:layout_marginBottom="49dp"
-            android:layout_above="@+id/send_btn"
-            android:layout_centerHorizontal="true" />
 
         <ImageButton
             android:id="@+id/send_btn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/send_btn_states"
-            android:layout_alignTop="@+id/header_table"
+            android:layout_below="@+id/toolbar"
+            android:layout_marginTop="200dp"
             android:layout_centerHorizontal="true" />
 
+        <ImageButton
+            android:id="@+id/startover_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@null"
+            android:src="@drawable/startover_btn_states"
+            android:layout_below="@+id/toolbar"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:layout_marginTop="21dp" />
+
+        <!-- Signature verification + header difference information table -->
         <TableLayout
         android:id="@+id/sigVer_table"
-        android:layout_height="wrap_content" android:layout_width="wrap_content"
-        android:layout_marginTop="200dp"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:layout_marginTop="150dp"
         android:layout_centerHorizontal="true">
         <TableRow
-            android:id="@+id/icon_row"
+            android:id="@+id/sigVerIcon_row"
             android:layout_height="wrap_content"
-            android:layout_width="wrap_content">
+            android:layout_width="wrap_content"
+            android:paddingBottom="5dp">
             <ImageView
                 android:id="@+id/sigVerIcon"
                 android:src="@drawable/verified_icon"
@@ -54,13 +61,25 @@
         <TableRow
             android:id="@+id/sigVerLabel_row"
             android:layout_height="wrap_content"
-            android:layout_width="wrap_content">
+            android:layout_width="wrap_content"
+            android:paddingBottom="10dp">
             <TextView
                 android:id="@+id/sigVerInfo"
                 android:textSize="16sp"
                 android:layout_gravity="center"
                 android:textColor="@color/white"
                 android:fontFamily="monospace"/>
+        </TableRow>
+        <TableRow
+            android:id="@+id/headerDifferenceIcon_row"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content">
+            <ImageView
+                android:id="@+id/headerDiffIcon"
+                android:src="@drawable/verified_icon"
+                android:layout_gravity="center"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"/>
         </TableRow>
         <TableRow
             android:id="@+id/headerDifferenceInfo_row"
@@ -76,23 +95,23 @@
         <TableRow
             android:id="@+id/viewHeaders_btn_row"
             android:layout_height="wrap_content"
-            android:layout_width="wrap_content">
-            <Button
-                android:id="@+id/viewHeaders_btn"
+            android:layout_width="wrap_content"
+            android:paddingTop="30dp" >
+            <ImageButton
+                android:id="@+id/viewheaders_btn"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@android:color/transparent"
-                android:text="View Request Headers"
-                android:fontFamily="monospace"
-                android:textColor="@drawable/custom_button"
-                android:textSize="15sp"/>
+                android:layout_gravity="center"
+                android:background="@null"
+                android:src="@drawable/viewheaders_btn_states"/>
         </TableRow>
         </TableLayout>
 
+        <!-- Headers Table -->
         <TableLayout
-            android:id="@+id/header_table"
+            android:id="@+id/headers_table"
             android:layout_height="wrap_content" android:layout_width="wrap_content"
-            android:layout_marginTop="200dp"
+            android:layout_marginTop="150dp"
             android:layout_centerHorizontal="true">
             <TableRow
                 android:id="@+id/origHeaderLabel_row"
