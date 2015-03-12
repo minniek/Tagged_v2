@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Tagged_v2</string>
+    <string name="app_name">Tagged</string>
     <string name="action_settings">Settings</string>
     <string name="button_send">Send</string>
     <string name="button_clear">Clear</string>
@@ -17,8 +17,10 @@
     <color name="sage">#A0C395</color>
     <color name="white">#FFFFFF</color>
     <color name="orangesicle">#FBBC5C</color>
-    <color name="sunshine">#FFFF66</color>
+    <color name="sunshine">#fff2cc</color>
     <color name="slateBlue">#468499</color>
     <color name="salmon">#FA8072</color>
+    <color name="teal">#008080</color>
     <color name="moodyBlue">#468499</color>
+    <color name="smokeyTeal">#70AEA0</color>
 </resources>

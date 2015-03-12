@@ -22,12 +22,15 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Table;
 import com.google.gson.Gson;
 
 import org.json.JSONException;
@@ -56,13 +59,15 @@ import java.util.TreeMap;
 public class MainActivity extends ActionBarActivity implements View.OnClickListener {
 
     // Declare widgets
-    Button sendBtn, viewHeadersBtn, clearBtn;
-    TextView responseTv, origHeaderTv, diffTv;
-    TableLayout headerTable;
+    ImageButton sendBtn, startoverBtn;
+    Button viewHeadersBtn;
+    TextView responseTv, origHeaderTv, diffTv, sigVerInfoTv, headerDifferenceInfoTv;
+    ImageView sigVerIcon;
+    TableLayout sigVerTable, headerTable;
     Toolbar toolbar;
 
     // Tagged server variables
-    final String serverIP = "192.168.1.6"; final String serverPage = "server_v1.php";
+    final String serverIP = "168.122.14.115"; final String serverPage = "server_v1.php";
 
     /*// Uncomment to force app to use Python Proxy
     final String proxyIP = "192.168.42.1"; final int proxyPort = 1717;
@@ -78,28 +83,33 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
 
         // Map widgets to XML
-        sendBtn = (Button)findViewById(R.id.send_btn);
+        sendBtn = (ImageButton)findViewById(R.id.send_btn);
         viewHeadersBtn = (Button)findViewById(R.id.viewHeaders_btn);
-        clearBtn = (Button)findViewById(R.id.clear_btn);
+        startoverBtn = (ImageButton)findViewById(R.id.startover_btn);
         responseTv = (TextView)findViewById(R.id.responseStr_textView);
         origHeaderTv = (TextView)findViewById(R.id.origHeader_textView);
         diffTv = (TextView)findViewById(R.id.diffHeader_textView);
+        sigVerIcon = (ImageView)findViewById(R.id.sigVerIcon);
+        sigVerInfoTv = (TextView)findViewById(R.id.sigVerInfo);
+        sigVerTable = (TableLayout)findViewById(R.id.sigVer_table);
         headerTable = (TableLayout)findViewById(R.id.header_table);
+        headerDifferenceInfoTv = (TextView)findViewById(R.id.headerDifferenceInfo_textView);
         toolbar = (Toolbar)findViewById(R.id.toolbar);
 
         // Set onClickListener event and get rid of default settings on buttons
-        sendBtn.setOnClickListener(this); sendBtn.setTransformationMethod(null);
-        clearBtn.setOnClickListener(this); clearBtn.setTransformationMethod(null);
+        sendBtn.setOnClickListener(this);
+        startoverBtn.setOnClickListener(this);
         viewHeadersBtn.setOnClickListener(this); viewHeadersBtn.setTransformationMethod(null);
 
         // Toolbar settings
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
-        toolbar.setLogo(R.drawable.tagged_logo_v6);
+        toolbar.setLogo(R.drawable.tagged_logo_v7);
 
         // Initial widget settings
         viewHeadersBtn.setEnabled(false); viewHeadersBtn.setVisibility(View.INVISIBLE);
-        clearBtn.setEnabled(false); clearBtn.setVisibility(View.INVISIBLE);
+        startoverBtn.setEnabled(false); startoverBtn.setVisibility(View.INVISIBLE);
+        sigVerTable.setEnabled(false); sigVerTable.setVisibility(View.INVISIBLE);
         headerTable.setEnabled(false); headerTable.setVisibility(View.INVISIBLE);
     }
 
@@ -113,8 +123,8 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.send_btn:
-                //Toast.makeText(getApplicationContext(), "Testing 123...", Toast.LENGTH_LONG).show();
+            case R.id.about:
+                Toast.makeText(getApplicationContext(), "@ Copyright Minnie Kim", Toast.LENGTH_SHORT).show();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -131,97 +141,16 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
             // If network is present, start AsyncTask to connect to given URL
             if ((nwInfo != null) && (nwInfo.isConnected())) {
-                new StartAsyncTask().execute(taggedURL); // Returns "responseStr"
+                new StartAsyncTask().execute(taggedURL);
             } else {
                 responseTv.setText("ERROR No network connection detected.");
-            }
-
-            // Begin signature verification process
-            // StartAsyncTask().execute(taggedURL) returns "responseStr"
-            // Create modified header map with "responseStr" to extract "Auth" header, which contains the digital signature
-            modHeadersMap = new TreeMap<>();
-            try {
-                JSONObject modHeadersJSON= new JSONObject(responseStr);
-                //Log.d(TAG, "modHeadersJSON.toString(): " + modHeadersJSON.toString());
-                modHeadersMap = new Gson().fromJson(modHeadersJSON.toString(), modHeadersMap.getClass());
-                //Log.d(TAG, "modHeadersMap.toString(): " + modHeadersMap.toString());
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-
-            // Extract the digital signature from modHeadersMap
-            String digSig = "";
-            for (Map.Entry<String, String> modHeader : modHeadersMap.entrySet()) {
-                if (modHeader.getKey().equals("Auth")) {
-                    digSig = modHeader.getValue();
-                }
-            }
-            //modHeadersMap.remove("Auth");
-            //Log.d(TAG, "Digital signature: " + digSig);
-            //Log.d(TAG, "Modified Headers minus Auth: " + modHeadersMap.toString());
-
-            // Extract Tagged server's public key from "public_key.pem" in res/raw and create PublicKey instance
-            boolean isVerified;
-            try {
-                InputStream is = this.getResources().openRawResource(R.raw.public_key);
-                BufferedReader br = new BufferedReader(new InputStreamReader(is));
-                StringBuilder pubKeySB = new StringBuilder();
-                String line;
-                try {
-                    while ((line = br.readLine()) != null)
-                        pubKeySB.append(line);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                // Remove header and footer
-                String pubKeyStr = pubKeySB.toString();
-                pubKeyStr = pubKeyStr.replace("-----BEGIN PUBLIC KEY-----", "");
-                pubKeyStr = pubKeyStr.replace("-----END PUBLIC KEY-----", "");
-                //Log.d(TAG, "Public key string: " + pubKeyStr);
-
-                // Create Public Key instance from pubKeyStr
-                X509EncodedKeySpec spec = new X509EncodedKeySpec(Base64.decode(pubKeyStr, Base64.DEFAULT));
-                KeyFactory kf = KeyFactory.getInstance("RSA");
-                PublicKey pubKey = kf.generatePublic(spec);
-
-                // Verify digital signature from Tagged server
-                try {
-                    Signature sig = Signature.getInstance("SHA256withRSA");
-                    sig.initVerify(pubKey);
-
-                    // "responseStr" contains the data received from Tagged server
-                    // Remove the "Auth" header before processing
-                    String responseStrEdited = "";  // Will contain data received from Tagged server, minus the "Auth" header
-                    //Log.d(TAG, "responseStr before removing "Auth": " + responseStr);
-                    responseStrEdited = responseStr.replaceAll(",\"Auth\":.*$", "}");
-                    //Log.d(TAG, "responseStr after removing "Auth": " + responseStr);
-                    sig.update(responseStrEdited.getBytes());
-
-                    isVerified = sig.verify(Base64.decode(digSig, Base64.DEFAULT));
-                    Log.d(TAG, "Signature verified?: " + isVerified);
-                } catch (SignatureException e) {
-                    e.printStackTrace();
-                }
-            } catch (NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException e) {
-                e.printStackTrace();
-            }
-
-            // If signature is verified, alert user and give option to view headers
-            if (isVerified = true) {
-                Toast.makeText(getApplicationContext(), "Signature verified!", Toast.LENGTH_SHORT).show();
-                sendBtn.setEnabled(false); sendBtn.setVisibility(View.INVISIBLE);
-                viewHeadersBtn.setEnabled(true); viewHeadersBtn.setVisibility(View.VISIBLE);
-                clearBtn.setEnabled(true); clearBtn.setVisibility(View.VISIBLE);
-
-            } else {
-                Toast.makeText(getApplicationContext(), "Signature NOT verified!", Toast.LENGTH_SHORT).show();
             }
         }
 
         if (v == viewHeadersBtn) {
-            viewHeadersBtn.setEnabled(true); viewHeadersBtn.setVisibility(View.INVISIBLE);
-            clearBtn.setEnabled(true); clearBtn.setVisibility(View.VISIBLE);
+            viewHeadersBtn.setEnabled(false); viewHeadersBtn.setVisibility(View.INVISIBLE);
+            startoverBtn.setEnabled(true); startoverBtn.setVisibility(View.VISIBLE);
+            sigVerTable.setEnabled(false); sigVerTable.setVisibility(View.INVISIBLE);
             headerTable.setEnabled(true); headerTable.setVisibility(View.VISIBLE);
 
             // Display original headers
@@ -229,34 +158,43 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 origHeaderTv.append(entry.getKey() + ": " + entry.getValue() + "\n");
             }
 
-            // Display modified headers
-            for (Map.Entry<String, String> entry : modHeadersMap.entrySet()) {
-                responseTv.append(entry.getKey() + ": " + entry.getValue() + "\n");
+            if (modHeadersMap == null) {
+                responseTv.append("ERROR: Could not fetch modified headers!");
             }
+            // Display modified headers
+            else {
+                for (Map.Entry<String, String> entry : modHeadersMap.entrySet()) {
+                    responseTv.append(entry.getKey() + ": " + entry.getValue() + "\n");
+                }
 
-            // Compare and display the modified headers
-            StringBuilder diffHeaders = new StringBuilder();
-            modHeadersMap.remove("Auth");
-            //Log.d(TAG, modHeadersMap.toString());
-            MapDifference<String, String> mapDiff = Maps.difference(origHeadersMap, modHeadersMap);
-            //Log.d(TAG, mapDiff.entriesOnlyOnRight().toString());
-            diffHeaders.append(mapDiff.entriesOnlyOnRight().toString().replace("{", "").replace("}", ""));
-            diffTv.setText(diffHeaders);
+                // Compare and display the modified headers
+                StringBuilder diffHeaders = new StringBuilder();
+                modHeadersMap.remove("Auth");
+                //Log.d(TAG, modHeadersMap.toString());
+                MapDifference<String, String> mapDiff = Maps.difference(origHeadersMap, modHeadersMap);
+                //Log.d(TAG, mapDiff.entriesOnlyOnRight().toString());
+                diffHeaders.append(mapDiff.entriesOnlyOnRight().toString().replace("{", "").replace("}", ""));
+                diffTv.setText(diffHeaders);
 
-            if (diffHeaders.toString().equals("")) {
-                diffTv.setText("No header modification was detected.");
+                if (diffHeaders.toString().equals("")) {
+                    diffTv.setText("No header modifications were detected :)");
+                }
             }
         }
 
-        if (v == clearBtn) {
-            responseStr = "";
+        if (v == startoverBtn) {
+            // Clear out text views
             responseTv.setText("");
             origHeaderTv.setText("");
             diffTv.setText("");
 
-            viewHeadersBtn.setEnabled(false); viewHeadersBtn.setVisibility(View.INVISIBLE);
+            // Enable + show send button only
             sendBtn.setEnabled(true); sendBtn.setVisibility(View.VISIBLE);
-            clearBtn.setEnabled(false); clearBtn.setVisibility(View.INVISIBLE);
+
+            // Disable + hide the view headers button, start over button, and all tables
+            viewHeadersBtn.setEnabled(false); viewHeadersBtn.setVisibility(View.INVISIBLE);
+            startoverBtn.setEnabled(false); startoverBtn.setVisibility(View.INVISIBLE);
+            sigVerTable.setEnabled(false); sigVerTable.setVisibility(View.INVISIBLE);
             headerTable.setEnabled(false); headerTable.setVisibility(View.INVISIBLE);
         }
     }
@@ -273,18 +211,9 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             }
         }
 
-        // onPostExecute displays the results of the AsyncTask
         protected void onPostExecute(String responseStr) {
-            // Make map of modified headers using responseStr
-            modHeadersMap = new TreeMap<>();
-            try {
-                JSONObject modHeadersJSON= new JSONObject(responseStr);
-                modHeadersMap = new Gson().fromJson(modHeadersJSON.toString(), modHeadersMap.getClass());
-                //Log.d(TAG, "modHeadersJSON.toString(): " + modHeadersJSON.toString());
-                //Log.d(TAG, "modHeadersMap.toString(): " + modHeadersMap.toString());
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
+            // Call verifySignature method
+            verifySignature(responseStr);
         }
 
         private String connectToURL(String url) throws IOException {
@@ -330,7 +259,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 }
                 responseStr = taggedContent.toString();
                 conn.disconnect();
-                Log.d(TAG, "Tagged server echoed the following response string: " + responseStr);
+                //Log.d(TAG, "Tagged server echoed the following response string: " + responseStr);
                 return responseStr;
             } catch (MalformedURLException e) {
                 e.printStackTrace();
@@ -338,6 +267,135 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             } catch (IOException e) {
                 e.printStackTrace();
                 return responseStr = "ERROR IOException caught: " + e;
+            }
+        }
+    }
+
+    public void verifySignature(String responseStr) {
+
+        // Create map of modified headers using responseStr
+        modHeadersMap = new TreeMap<>();
+        try {
+            JSONObject modHeadersJSON= new JSONObject(responseStr);
+            modHeadersMap = new Gson().fromJson(modHeadersJSON.toString(), modHeadersMap.getClass());
+            //Log.d(TAG, "modHeadersJSON.toString(): " + modHeadersJSON.toString());
+            //Log.d(TAG, "modHeadersMap.toString(): " + modHeadersMap.toString());
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        // Extract the digital signature from modHeadersMap
+        String digSig = "";
+        for (Map.Entry<String, String> modHeader : modHeadersMap.entrySet()) {
+            if (modHeader.getKey().equals("Auth")) {
+                digSig = modHeader.getValue();
+            }
+        }
+
+        // Extract Tagged server's public key from "public_key.pem" in res/raw and create PublicKey instance
+        boolean isVerified;
+        try {
+            InputStream is = this.getResources().openRawResource(R.raw.public_key);
+            BufferedReader br = new BufferedReader(new InputStreamReader(is));
+            StringBuilder pubKeySB = new StringBuilder();
+            String line;
+            try {
+                while ((line = br.readLine()) != null)
+                    pubKeySB.append(line);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            // Remove header and footer
+            String pubKeyStr = pubKeySB.toString();
+            pubKeyStr = pubKeyStr.replace("-----BEGIN PUBLIC KEY-----", "");
+            pubKeyStr = pubKeyStr.replace("-----END PUBLIC KEY-----", "");
+            //Log.d(TAG, "Public key string: " + pubKeyStr);
+
+            // Create Public Key instance from pubKeyStr
+            X509EncodedKeySpec spec = new X509EncodedKeySpec(Base64.decode(pubKeyStr, Base64.DEFAULT));
+            KeyFactory kf = KeyFactory.getInstance("RSA");
+            PublicKey pubKey = kf.generatePublic(spec);
+
+            // Verify digital signature from Tagged server
+            try {
+                Signature sig = Signature.getInstance("SHA256withRSA");
+                sig.initVerify(pubKey);
+
+                // "responseStr" contains the data received from Tagged server
+                // Remove the "Auth" header before processing
+                String responseStrEdited = "";  // Will contain data received from Tagged server, minus the "Auth" header
+                //Log.d(TAG, "responseStr before removing \"Auth\": " + responseStr);
+                responseStrEdited = responseStr.replaceAll(",\"Auth\":.*$", "}");
+                //Log.d(TAG, "responseStr after removing \"Auth\": " + responseStrEdited);
+                sig.update(responseStrEdited.getBytes());
+                //sig.update(responseStr.getBytes()); // [TESTER] Uncomment to test unverified signature
+                isVerified = sig.verify(Base64.decode(digSig, Base64.DEFAULT));
+                Log.d(TAG, "Signature verified?: " + isVerified);
+
+                // Alert user if signature is un/verified and give option to view headers
+                if (isVerified == true) {
+                    // Enable + show sig verified info
+                    sigVerTable.setEnabled(true); sigVerTable.setVisibility(View.VISIBLE);
+                    sigVerIcon.setImageResource(R.drawable.verified_icon);
+                    sigVerInfoTv.setText("Tagged server signature verified!");
+
+                    // Determine if there are any header modifications
+                    checkRequestHeaderDifference(origHeadersMap, modHeadersMap);
+
+                    // Enable view headers button
+                    viewHeadersBtn.setEnabled(true); viewHeadersBtn.setVisibility(View.VISIBLE);
+
+                    // Disable + hide send button, start over button, and unverified table
+                    sendBtn.setEnabled(false); sendBtn.setVisibility(View.INVISIBLE);
+                    startoverBtn.setEnabled(false); startoverBtn.setVisibility(View.INVISIBLE);
+                }
+
+                if (isVerified == false) {
+                    // Enable + show sig unverified info and view headers button
+                    sigVerTable.setEnabled(true); sigVerTable.setVisibility(View.VISIBLE);
+                    sigVerIcon.setImageResource(R.drawable.unverified_icon);
+                    sigVerInfoTv.setText("Tagged server signature NOT verified!");
+
+                    // Determine if there are any header modifications
+                    checkRequestHeaderDifference(origHeadersMap, modHeadersMap);
+
+                    // Enable view headers button
+                    viewHeadersBtn.setEnabled(true); viewHeadersBtn.setVisibility(View.VISIBLE);
+
+                    // Disable + hide send button, start over button, and unverified table
+                    sendBtn.setEnabled(false); sendBtn.setVisibility(View.INVISIBLE);
+                    startoverBtn.setEnabled(false); startoverBtn.setVisibility(View.INVISIBLE);
+                }
+            } catch (SignatureException e) {
+                e.printStackTrace();
+            }
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void  checkRequestHeaderDifference(Map<String, String> map1, Map<String, String> map2) {
+        if (map1 == null) {
+            headerDifferenceInfoTv.setText("ERROR: Could not process original request headers...");
+        } else if (map2 == null ) {
+            headerDifferenceInfoTv.setText("ERROR: Could not process request headers received by Tagged server...");
+        } else {
+            // Compare maps
+            StringBuilder diffHeaders = new StringBuilder();
+            TreeMap<String, String> map2edited = new TreeMap<>(map2);
+            map2edited.remove("Auth");
+            //Log.d(TAG, "map2edited: " + map2edited.toString());
+            MapDifference<String, String> mapDiff = Maps.difference(map1, map2edited);
+            //Log.d(TAG, mapDiff.entriesOnlyOnRight().toString());
+            diffHeaders.append(mapDiff.entriesOnlyOnRight());
+            Log.d(TAG, "Diff string: " + diffHeaders.toString());
+
+            if (diffHeaders.toString().contentEquals("{}")) {
+                //diffTv.setText("No header modification was detected.");
+                headerDifferenceInfoTv.setText("No header modifications were detected!");
+            } else {
+                headerDifferenceInfoTv.setText("Header modifications were detected!");
             }
         }
     }
