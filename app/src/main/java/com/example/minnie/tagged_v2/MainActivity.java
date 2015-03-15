@@ -64,7 +64,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     Toolbar toolbar;
 
     // Tagged server variables
-    final String serverIP = "155.41.39.13"; final String serverPage = "server_v1.php";
+    final String serverIP = "155.41.88.231"; final String serverPage = "server_v1.php";
 
     /*// Uncomment to force app to use Python Proxy
     final String proxyIP = "192.168.42.1"; final int proxyPort = 1717;
@@ -170,30 +170,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 }
             }
 
-            /*
-            // Display headers received by Tagged server and the diff
-            if (modHeadersMap == null) {
-                responseTv.append("ERROR: Could not fetch modified headers!");
-            } else {
-                for (Map.Entry<String, String> entry : modHeadersMap.entrySet()) {
-                    responseTv.append(entry.getKey() + ": " + entry.getValue() + "\n");
-                }
-
-                // Compare and display the modified headers
-                // entriesOnlyOnRight(): returns map that contains keys that are only present in the right map (i.e. modHeadersMap)
-                StringBuilder diffHeaders = new StringBuilder();
-                modHeadersMap.remove("Auth");
-                //Log.d(TAG, modHeadersMap.toString());
-                MapDifference<String, String> mapDiff = Maps.difference(origHeadersMap, modHeadersMap);
-                //Log.d(TAG, mapDiff.entriesOnlyOnRight().toString());
-                diffHeaders.append(mapDiff.entriesOnlyOnRight().toString().replace("{", "").replace("}", ""));
-                diffTv.setText(diffHeaders);
-
-                if (diffHeaders.toString().equals("")) {
-                    diffTv.setText("No header modifications were detected!");
-                }
-            }
-            */
+            // Diff headers are set in "checkRequestHeaderDifference"
         }
 
         if (v == startoverBtn) {
@@ -401,88 +378,58 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             // Compare maps and check difference
             String diffHeaders = "";
             map1 = new TreeMap<>(map1);
-            TreeMap<String, String> map2edited = new TreeMap<>(map2);
-            map2edited.remove(digSigHeaderName);
+            TreeMap<String, String> map2Edited = new TreeMap<>(map2);
+            map2Edited.remove(digSigHeaderName);
             Log.d(TAG, "map1 in checkRequestHeaderDifference: " + map1.toString());
-            Log.d(TAG, "map2edited (TreeMap with" + digSigHeaderName +  " removed): " + map2edited.toString());
+            Log.d(TAG, "map2edited (TreeMap with" + digSigHeaderName +  " removed): " + map2Edited.toString());
 
-            /*
+            // Testers for the following for-loop (when Python proxy not available)
+            //map2Edited.put("X-tagged", "mini");
+            //map2Edited.put("Happy", "hacking!");
+            //map2Edited.remove("Host");
+            //map2Edited.remove("Connection");
+            Log.d(TAG, "map2edited when manually edited: " + map2Edited.toString());
+
+            // Compare entries in each map and store those that are not present in one or the other in diffHeadersMap
+            // An entry is a key-value pair
+            // First for-loop: if map2edited does not contain an entry that is in map1, add that map1 entry to diffHeadersMap
+            // Second for-loop: if map1 does not contain an entry that is in map2edited, add that map2 entry to diffHeadersMap
+            diffHeadersMap = new TreeMap<>();
+            for (Map.Entry<String, String> map1Entry : map1.entrySet()) {
+                if (!map2Edited.entrySet().contains(map1Entry)) {
+                    diffHeadersMap.put(map1Entry.getKey(), map1Entry.getValue());
+                }
+            }
+
+            for (Map.Entry<String, String> map2EditedEntry : map2Edited.entrySet()) {
+                if (!map1.entrySet().contains(map2EditedEntry)) {
+                    diffHeadersMap.put(map2EditedEntry.getKey(), map2EditedEntry.getValue());
+                }
+            }
+
+            Log.d(TAG, "diffHeadersMap.toString(): " + diffHeadersMap.toString());
+
+            // Set diffTv to display diffHeadersMap when the viewHeadersBtn is pressed
+            if (!diffHeaders.isEmpty()) {
+                for (Map.Entry<String, String> entry : diffHeadersMap.entrySet()) {
+                    diffTv.append(entry.getKey() + ": " + entry.getValue() + "\n");
+                }
+            } else {
+                diffTv.append("No header modifications were detected!");
+            }
+
+             /*// Uncomment to use Google Guava's MapDifference
             // Create MapDifference object and call entriesOnlyOnRight(leftmap, rightmap)
             // entriesOnlyOnRight(): returns map containing the entries from the right map whose keys are not present in the left map
             MapDifference<String, String> mapDiff = Maps.difference(map1, map2edited);
-            //Log.d(TAG, mapDiff.entriesOnlyOnRight().toString());
             diffHeaders.append(mapDiff.entriesOnlyOnRight());
             Log.d(TAG, "Diff string: " + diffHeaders.toString());
             */
 
-            // Testers for the following for-loop (when Python proxy not available)
-            //map2edited.put("X-tagged", "mini");
-            map2edited.remove("Host");
-            map2edited.remove("Connection");
-            Log.d(TAG, "map2edited when manually edited: " + map2edited.toString());
-
-
-            TreeMap<String, String> diffHeadersMap1 = new TreeMap<>();
-            TreeMap<String, String> diffHeadersMap2 = new TreeMap<>();
-            TreeMap<String, String> diffHeadersMap3 = new TreeMap<>();
-            int whichDiffHeadersMap = 0;
-
-            // Three cases
-            // Entry is the key-value pair
-            for (Map.Entry<String, String> map2Entry : map2edited.entrySet()) {
-                if (map1.size() != map2.size()) {
-                    if (map1.size() > map2.size()) {
-                        whichDiffHeadersMap = 1;
-                        Log.d(TAG, " whichDiffHeadersMap: " +  whichDiffHeadersMap);
-                        if (!map2.entrySet().contains(map1.entrySet())) {
-                            diffHeadersMap1 = new TreeMap<>(map1);
-                            diffHeadersMap1.remove(map2Entry);
-                        }
-                    }
-
-                    // TODO Fix this logic
-                    if (map1.size() < map2.size()) {
-                        whichDiffHeadersMap = 2;
-                        Log.d(TAG, " whichDiffHeadersMap: " +  whichDiffHeadersMap);
-                        if (!map1.entrySet().contains(map2Entry)) {
-                            diffHeadersMap2.put(map2Entry.getKey(), map2Entry.getValue());
-                        }
-                    }
-                } else {
-                    whichDiffHeadersMap = 3;
-                    Log.d(TAG, " whichDiffHeadersMap: " +  whichDiffHeadersMap);
-                    if (!map1.entrySet().contains(map2Entry)) {
-                        diffHeadersMap3.put(map2Entry.getKey(), map2Entry.getValue());
-                    }
-                }
-            }
-
-            switch (whichDiffHeadersMap) {
-                case 1: Log.d(TAG, "Diff headers: " + diffHeadersMap1.toString());
-                        diffHeaders = diffHeadersMap1.toString();
-                        // Set headers for display
-                        for (Map.Entry<String, String> entry : diffHeadersMap1.entrySet()) {
-                            diffTv.append(entry.getKey() + ": " + entry.getValue() + "\n");
-                        }
-                        break;
-                case 2: Log.d(TAG, "Diff headers: " + diffHeadersMap2.toString());
-                        diffHeaders = diffHeadersMap2.toString();
-                        for (Map.Entry<String, String> entry : diffHeadersMap2.entrySet()) {
-                            diffTv.append(entry.getKey() + ": " + entry.getValue() + "\n");
-                        }
-                        break;
-                case 3: Log.d(TAG, "Diff headers: " + diffHeadersMap3.toString());
-                        diffHeaders = diffHeadersMap2.toString();
-                        for (Map.Entry<String, String> entry : diffHeadersMap3.entrySet()) {
-                            diffTv.append(entry.getKey() + ": " + entry.getValue() + "\n");
-                        }
-                        break;
-            }
-
-            if (diffHeaders.equals("{}")) {
+            if (diffHeadersMap.isEmpty()) {
                 headerDiffIcon.setImageResource(R.drawable.verified_icon);
                 headerDifferenceInfoTv.setText("No header modifications were detected.");
-            } else if (!diffHeaders.toString().contentEquals("{}")) { // Empty map
+            } else if (!diffHeadersMap.isEmpty()) {
                 headerDiffIcon.setImageResource(R.drawable.unverified_icon);
                 headerDifferenceInfoTv.setText("Header modifications were detected.");
             }
