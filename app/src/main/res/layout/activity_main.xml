@@ -67,6 +67,8 @@
                 android:id="@+id/sigVerInfo"
                 android:textSize="16sp"
                 android:layout_gravity="center"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:textColor="@color/white"
                 android:fontFamily="monospace"/>
         </TableRow>
@@ -88,6 +90,8 @@
             <TextView
                 android:id="@+id/headerDifferenceInfo_textView"
                 android:textSize="16sp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:textColor="@color/white"
                 android:fontFamily="monospace"/>
@@ -110,7 +114,8 @@
         <!-- Headers Table -->
         <TableLayout
             android:id="@+id/headers_table"
-            android:layout_height="wrap_content" android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
             android:layout_marginTop="150dp"
             android:layout_centerHorizontal="true">
             <TableRow
@@ -148,6 +153,8 @@
                     android:text="Request Headers Received by Tagged Server"
                     android:textSize="14sp"
                     android:layout_gravity="left"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:textColor="@color/white"
                     android:fontFamily="monospace"/>
             </TableRow>
@@ -174,6 +181,8 @@
                     android:text="Request Headers Modified by Proxy Server"
                     android:textSize="14sp"
                     android:layout_gravity="left"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:textColor="@color/white"
                     android:fontFamily="monospace"/>
             </TableRow>

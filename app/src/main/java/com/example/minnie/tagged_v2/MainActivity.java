@@ -27,9 +27,9 @@ import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.common.collect.MapDifference;
-import com.google.common.collect.Maps;
-import com.google.gson.Gson;
+//import com.google.common.collect.MapDifference;
+//import com.google.common.collect.Maps;
+//import com.google.gson.Gson;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -249,6 +249,9 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                     taggedContent.append(line);
                 }
                 responseStr = taggedContent.toString();
+
+                // TODO Use Gson library to make modHeadersMap (this method is not going to be part of Tagged library)
+
                 conn.disconnect();
                 //Log.d(TAG, "Tagged server echoed the following response string: " + responseStr);
                 return responseStr;
@@ -264,24 +267,16 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     }
 
     public void verifySignature(String responseStr, String digSigHeaderName) {
-        // Create map of modified headers using responseStr
-        modHeadersMap = new TreeMap<>();
-        try {
-            JSONObject modHeadersJSON= new JSONObject(responseStr);
-            modHeadersMap = new Gson().fromJson(modHeadersJSON.toString(), modHeadersMap.getClass());
-            //Log.d(TAG, "modHeadersJSON.toString(): " + modHeadersJSON.toString());
-            //Log.d(TAG, "modHeadersMap.toString(): " + modHeadersMap.toString());
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
-        // Extract the digital signature from modHeadersMap
-        String digSig = "";
-        for (Map.Entry<String, String> modHeader : modHeadersMap.entrySet()) {
-            if (modHeader.getKey().equals(digSigHeaderName)) {
-                digSig = modHeader.getValue();
-            }
-        }
+        // Extract digital signature from "responseStr"
+        // TODO Replace the code below with regex
+        Log.d(TAG, "responseStr: " + responseStr);
+        String digSig = responseStr;
+        String startIndex = "\"" + digSigHeaderName + "\":\"";
+        digSig = digSig.substring(digSig.indexOf(startIndex));
+        Log.d(TAG, digSig);
+        digSig = digSig.replace("\"" + digSigHeaderName + "\":\"", "");
+        digSig = digSig.substring(0, digSig.indexOf("\""));
+        Log.d(TAG, digSig);
 
         // Extract Tagged server's public key from "public_key.pem" in res/raw and create PublicKey instance
         boolean isVerified;
@@ -316,12 +311,9 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 // "responseStr" contains the data received from Tagged server
                 // Remove the "Auth" header before processing
                 String responseStrEdited = "";  // Will contain data received from Tagged server, minus the "Auth" header
-                //Log.d(TAG, "responseStr before removing \"Auth\": " + responseStr);
-                //responseStrEdited = responseStr.replaceAll(",\"Auth\":.*$", "}");
-                //Log.d(TAG, "responseStr after removing \"Auth\": " + responseStrEdited);
-                Log.d(TAG, "responseStr before removing \" + digSigHeaderName + \": " + responseStr);
+                Log.d(TAG, "responseStr before removing \"" + digSigHeaderName + "\": " + responseStr);
                 responseStrEdited = responseStr.replaceAll(",\"" + digSigHeaderName + "\":.*$", "}");
-                Log.d(TAG, "responseStr after removing \" + digSigHeaderName + \": " + responseStrEdited);
+                Log.d(TAG, "responseStr after removing \"" + digSigHeaderName + "\": " + responseStrEdited);
                 sig.update(responseStrEdited.getBytes());
                 isVerified = sig.verify(Base64.decode(digSig, Base64.DEFAULT));
                 Log.d(TAG, "Signature verified?: " + isVerified);
@@ -334,7 +326,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                     sigVerInfoTv.setText("Tagged server signature verified.");
 
                     // Determine if there are any header modifications
-                    checkRequestHeaderDifference(origHeadersMap, modHeadersMap, "Auth");
+                    checkRequestHeaderDifference(origHeadersMap, modHeadersMap, digSigHeaderName);
 
                     // Enable view headers and start over buttons
                     viewHeadersBtn.setEnabled(true); viewHeadersBtn.setVisibility(View.VISIBLE);
@@ -351,7 +343,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                     sigVerInfoTv.setText("Tagged server signature NOT verified.");
 
                     // Determine if there are any header modifications
-                    checkRequestHeaderDifference(origHeadersMap, modHeadersMap, "Auth");
+                    checkRequestHeaderDifference(origHeadersMap, modHeadersMap, digSigHeaderName);
 
                     // Enable view headers and start over buttons
                     viewHeadersBtn.setEnabled(true); viewHeadersBtn.setVisibility(View.VISIBLE);
