@@ -64,14 +64,15 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     Toolbar toolbar;
 
     // Tagged server variables
-    final String serverIP = "155.41.125.181"; final String serverPage = "server_v1.php";
+    final String serverIP = "155.41.39.13"; final String serverPage = "server_v1.php";
 
     /*// Uncomment to force app to use Python Proxy
     final String proxyIP = "192.168.42.1"; final int proxyPort = 1717;
     */
 
     String responseStr = "";
-    TreeMap<String, String> origHeadersMap, modHeadersMap;
+    String digSigHeaderName = "Auth";
+    TreeMap<String, String> origHeadersMap, modHeadersMap, diffHeadersMap;
     String TAG = "Tagged_v2";
 
     @Override
@@ -160,6 +161,16 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 origHeaderTv.append(entry.getKey() + ": " + entry.getValue() + "\n");
             }
 
+            // Display headers sent to the Tagged app (client)
+            if (modHeadersMap == null) {
+                responseTv.append("ERROR: Could not fetch modified headers!");
+            } else {
+                for (Map.Entry<String, String> entry : modHeadersMap.entrySet()) {
+                    responseTv.append(entry.getKey() + ": " + entry.getValue() + "\n");
+                }
+            }
+
+            /*
             // Display headers received by Tagged server and the diff
             if (modHeadersMap == null) {
                 responseTv.append("ERROR: Could not fetch modified headers!");
@@ -182,6 +193,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                     diffTv.setText("No header modifications were detected!");
                 }
             }
+            */
         }
 
         if (v == startoverBtn) {
@@ -215,7 +227,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
         protected void onPostExecute(String responseStr) {
             // Call verifySignature method
-            verifySignature(responseStr);
+            verifySignature(responseStr, digSigHeaderName);
         }
 
         private String connectToURL(String url) throws IOException {
@@ -274,7 +286,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         }
     }
 
-    public void verifySignature(String responseStr) {
+    public void verifySignature(String responseStr, String digSigHeaderName) {
         // Create map of modified headers using responseStr
         modHeadersMap = new TreeMap<>();
         try {
@@ -289,7 +301,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         // Extract the digital signature from modHeadersMap
         String digSig = "";
         for (Map.Entry<String, String> modHeader : modHeadersMap.entrySet()) {
-            if (modHeader.getKey().equals("Auth")) {
+            if (modHeader.getKey().equals(digSigHeaderName)) {
                 digSig = modHeader.getValue();
             }
         }
@@ -328,8 +340,11 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 // Remove the "Auth" header before processing
                 String responseStrEdited = "";  // Will contain data received from Tagged server, minus the "Auth" header
                 //Log.d(TAG, "responseStr before removing \"Auth\": " + responseStr);
-                responseStrEdited = responseStr.replaceAll(",\"Auth\":.*$", "}");
-                Log.d(TAG, "responseStr after removing \"Auth\": " + responseStrEdited);
+                //responseStrEdited = responseStr.replaceAll(",\"Auth\":.*$", "}");
+                //Log.d(TAG, "responseStr after removing \"Auth\": " + responseStrEdited);
+                Log.d(TAG, "responseStr before removing \" + digSigHeaderName + \": " + responseStr);
+                responseStrEdited = responseStr.replaceAll(",\"" + digSigHeaderName + "\":.*$", "}");
+                Log.d(TAG, "responseStr after removing \" + digSigHeaderName + \": " + responseStrEdited);
                 sig.update(responseStrEdited.getBytes());
                 isVerified = sig.verify(Base64.decode(digSig, Base64.DEFAULT));
                 Log.d(TAG, "Signature verified?: " + isVerified);
@@ -342,7 +357,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                     sigVerInfoTv.setText("Tagged server signature verified.");
 
                     // Determine if there are any header modifications
-                    checkRequestHeaderDifference(origHeadersMap, modHeadersMap);
+                    checkRequestHeaderDifference(origHeadersMap, modHeadersMap, "Auth");
 
                     // Enable view headers and start over buttons
                     viewHeadersBtn.setEnabled(true); viewHeadersBtn.setVisibility(View.VISIBLE);
@@ -359,7 +374,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                     sigVerInfoTv.setText("Tagged server signature NOT verified.");
 
                     // Determine if there are any header modifications
-                    checkRequestHeaderDifference(origHeadersMap, modHeadersMap);
+                    checkRequestHeaderDifference(origHeadersMap, modHeadersMap, "Auth");
 
                     // Enable view headers and start over buttons
                     viewHeadersBtn.setEnabled(true); viewHeadersBtn.setVisibility(View.VISIBLE);
@@ -376,29 +391,98 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         }
     }
 
-    public void  checkRequestHeaderDifference(Map<String, String> map1, Map<String, String> map2) {
+    public void  checkRequestHeaderDifference(Map<String, String> map1, Map<String, String> map2, String
+                                              digSigHeaderName) {
         if (map1 == null) {
             headerDifferenceInfoTv.setText("ERROR: Could not process original request headers.");
         } else if (map2 == null ) {
             headerDifferenceInfoTv.setText("ERROR: Could not process request headers received by Tagged server.");
         } else {
             // Compare maps and check difference
-            StringBuilder diffHeaders = new StringBuilder();
+            String diffHeaders = "";
+            map1 = new TreeMap<>(map1);
             TreeMap<String, String> map2edited = new TreeMap<>(map2);
-            map2edited.remove("Auth");
-            //Log.d(TAG, "map2edited: " + map2edited.toString());
+            map2edited.remove(digSigHeaderName);
+            Log.d(TAG, "map1 in checkRequestHeaderDifference: " + map1.toString());
+            Log.d(TAG, "map2edited (TreeMap with" + digSigHeaderName +  " removed): " + map2edited.toString());
 
+            /*
             // Create MapDifference object and call entriesOnlyOnRight(leftmap, rightmap)
             // entriesOnlyOnRight(): returns map containing the entries from the right map whose keys are not present in the left map
             MapDifference<String, String> mapDiff = Maps.difference(map1, map2edited);
             //Log.d(TAG, mapDiff.entriesOnlyOnRight().toString());
             diffHeaders.append(mapDiff.entriesOnlyOnRight());
             Log.d(TAG, "Diff string: " + diffHeaders.toString());
+            */
 
-            if (diffHeaders.toString().contentEquals("{}")) {
+            // Testers for the following for-loop (when Python proxy not available)
+            //map2edited.put("X-tagged", "mini");
+            map2edited.remove("Host");
+            map2edited.remove("Connection");
+            Log.d(TAG, "map2edited when manually edited: " + map2edited.toString());
+
+
+            TreeMap<String, String> diffHeadersMap1 = new TreeMap<>();
+            TreeMap<String, String> diffHeadersMap2 = new TreeMap<>();
+            TreeMap<String, String> diffHeadersMap3 = new TreeMap<>();
+            int whichDiffHeadersMap = 0;
+
+            // Three cases
+            // Entry is the key-value pair
+            for (Map.Entry<String, String> map2Entry : map2edited.entrySet()) {
+                if (map1.size() != map2.size()) {
+                    if (map1.size() > map2.size()) {
+                        whichDiffHeadersMap = 1;
+                        Log.d(TAG, " whichDiffHeadersMap: " +  whichDiffHeadersMap);
+                        if (!map2.entrySet().contains(map1.entrySet())) {
+                            diffHeadersMap1 = new TreeMap<>(map1);
+                            diffHeadersMap1.remove(map2Entry);
+                        }
+                    }
+
+                    // TODO Fix this logic
+                    if (map1.size() < map2.size()) {
+                        whichDiffHeadersMap = 2;
+                        Log.d(TAG, " whichDiffHeadersMap: " +  whichDiffHeadersMap);
+                        if (!map1.entrySet().contains(map2Entry)) {
+                            diffHeadersMap2.put(map2Entry.getKey(), map2Entry.getValue());
+                        }
+                    }
+                } else {
+                    whichDiffHeadersMap = 3;
+                    Log.d(TAG, " whichDiffHeadersMap: " +  whichDiffHeadersMap);
+                    if (!map1.entrySet().contains(map2Entry)) {
+                        diffHeadersMap3.put(map2Entry.getKey(), map2Entry.getValue());
+                    }
+                }
+            }
+
+            switch (whichDiffHeadersMap) {
+                case 1: Log.d(TAG, "Diff headers: " + diffHeadersMap1.toString());
+                        diffHeaders = diffHeadersMap1.toString();
+                        // Set headers for display
+                        for (Map.Entry<String, String> entry : diffHeadersMap1.entrySet()) {
+                            diffTv.append(entry.getKey() + ": " + entry.getValue() + "\n");
+                        }
+                        break;
+                case 2: Log.d(TAG, "Diff headers: " + diffHeadersMap2.toString());
+                        diffHeaders = diffHeadersMap2.toString();
+                        for (Map.Entry<String, String> entry : diffHeadersMap2.entrySet()) {
+                            diffTv.append(entry.getKey() + ": " + entry.getValue() + "\n");
+                        }
+                        break;
+                case 3: Log.d(TAG, "Diff headers: " + diffHeadersMap3.toString());
+                        diffHeaders = diffHeadersMap2.toString();
+                        for (Map.Entry<String, String> entry : diffHeadersMap3.entrySet()) {
+                            diffTv.append(entry.getKey() + ": " + entry.getValue() + "\n");
+                        }
+                        break;
+            }
+
+            if (diffHeaders.equals("{}")) {
                 headerDiffIcon.setImageResource(R.drawable.verified_icon);
                 headerDifferenceInfoTv.setText("No header modifications were detected.");
-            } else {
+            } else if (!diffHeaders.toString().contentEquals("{}")) { // Empty map
                 headerDiffIcon.setImageResource(R.drawable.unverified_icon);
                 headerDifferenceInfoTv.setText("Header modifications were detected.");
             }
