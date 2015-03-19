@@ -1,9 +1,11 @@
-/* Tagged - Detect HTTP Request Header Modifications and Check Digital Signature Verification
+/*
+ * Tagged - Detect HTTP Request Header Modifications and Check Digital Signature Verification
  * References:
  * http://developer.android.com/training/basics/network-ops/connecting.html
  * http://www.compiletimeerror.com/2013/01/why-and-how-to-use-asynctask.html#.VMKb5P7F95A
  * http://stackoverflow.com/questions/11532989/android-decrypt-rsa-text-using-a-public-key-stored-in-a-file
  * http://docs.oracle.com/javase/tutorial/security/apisign/vstep4.html
+ *
  */
 
 package com.example.minnie.tagged_v2;
@@ -15,7 +17,6 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Base64;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -38,20 +39,15 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.InvalidKeyException;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
-import java.security.Signature;
-import java.security.SignatureException;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
+
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-public class MainActivity extends ActionBarActivity implements View.OnClickListener {
+import com.example.taggedlib.Tagged;
 
+public class MainActivity extends ActionBarActivity implements View.OnClickListener {
     // Declare widgets
     ImageButton sendBtn, viewHeadersBtn, startOverBtn;
     TextView responseTv, origHeaderTv, diffTv, sigVerInfoTv, headerDifferenceInfoTv;
@@ -60,7 +56,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     Toolbar toolbar;
 
     // Tagged server variables
-    final String serverIP = "192.168.1.8"; final String serverPage = "server_v1.php";
+    final String serverIP = "155.41.69.211"; final String serverPage = "server_v1.php";
 
     String responseStr = "";
     String digSigHeaderName = "Auth";
@@ -155,6 +151,12 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             origHeaderTv.setText("");
             diffTv.setText("");
 
+            // Clear out responseStr and header objects
+            responseStr = null;
+            origHeadersMap = new TreeMap<>();
+            modHeadersMap = new TreeMap<>();
+            diffHeadersMap = new TreeMap<>();
+
             // Enable + show send button only
             sendBtn.setEnabled(true); sendBtn.setVisibility(View.VISIBLE);
 
@@ -171,11 +173,12 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         protected String doInBackground(String... urls) {
             // Params come from the execute() call: params[0] is the url
             try {
-                connectToURL(urls[0]);
-                return responseStr; // return value to be used in onPostExecute
+                responseStr = connectToURL(urls[0]);
             } catch (IOException e) {
-                return responseStr = "Error: could not connect to URL. Please check URL";
+                e.printStackTrace();
+                Log.d(TAG, "Error: could not connect to " + urls[0]);
             }
+            return responseStr; // Return value is passed to onPostExecute()
         }
 
         protected void onPostExecute(String responseStr) {
@@ -183,6 +186,21 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             for (Map.Entry<String, String> entry : origHeadersMap.entrySet()) {
                 origHeaderTv.append(entry.getKey() + ": " + entry.getValue() + "\n");
             }
+
+            /*//TESTING getMapDifference in Tagged Library
+            Map<String, Integer> map1 = new HashMap<>();
+            map1.put("Apple", 5);
+            map1.put("Banana", 8);
+            map1.put("Raspberry", 1);
+
+            Map<String, Integer> map2 = new HashMap<>();
+            map2.put("Apple", 5);
+            map2.put("Banana", 8);
+            map2.put("Raspberry", 17);
+
+            Map<String, Integer> map3 = new Tagged().getMapDifference(map1, map2);
+            Log.d(TAG, "Map 3: " + map3.toString());
+            */
 
             // Make modHeadersMap from responseStr
             modHeadersMap = new TreeMap<>();
@@ -198,9 +216,15 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 responseTv.append(entry.getKey() + ": " + entry.getValue() + "\n");
             }
 
-            // Call verifySignature method
-            Boolean isVerified = verifySignature(responseStr, digSigHeaderName);
-            diffHeadersMap = new TreeMap<>();
+            // Get public key string from PEM file in res/raw
+            String pubKeyPemFile = "public_key";
+            Context myContext = getApplicationContext();
+            String pubKeyStr = new Tagged().getPublicKeyString(myContext, pubKeyPemFile);
+            Log.d(TAG, "Public key string (pubKeyStr): " + pubKeyStr);
+
+            // Get verification of signature
+            Boolean isVerified = new Tagged().verifySignature(pubKeyStr, responseStr, digSigHeaderName);
+            Log.d(TAG, "Signature verified (isVerified)?: " + isVerified);
 
             if (isVerified == true) {
                 // Enable + show sig verified info
@@ -209,7 +233,18 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 sigVerInfoTv.setText("Tagged server signature verified.");
 
                 // Determine if there are any header modifications
-                diffHeadersMap = getRequestHeaderDifference(origHeadersMap, modHeadersMap, digSigHeaderName);
+                diffHeadersMap = new TreeMap<>();
+
+
+                /*// TESTERS (when Python proxy is not available...)
+                modHeadersMap.put("X-tagged", "mini");
+                modHeadersMap.put("Happy", "hacking!");
+                modHeadersMap.remove("Host");
+                modHeadersMap.remove("Connection");
+                */
+
+                diffHeadersMap = new Tagged().getRequestHeaderDifference(origHeadersMap, modHeadersMap, digSigHeaderName);
+                Log.d(TAG, "Difference of headers (diffHeadersMap.toString()): " + diffHeadersMap.toString());
 
                 // Set icons and text views
                 if (!diffHeadersMap.isEmpty()) {
@@ -236,7 +271,9 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 sigVerInfoTv.setText("Tagged server signature NOT verified.");
 
                 // Determine if there are any header modifications
-                diffHeadersMap = getRequestHeaderDifference(origHeadersMap, modHeadersMap, digSigHeaderName);
+                diffHeadersMap = new TreeMap<>();
+                diffHeadersMap = new Tagged().getRequestHeaderDifference(origHeadersMap, modHeadersMap, digSigHeaderName);
+                Log.d(TAG, "Difference of headers (diffHeadersMap.toString()): " + diffHeadersMap.toString());
 
                 // Set icons and text views
                 if (!diffHeadersMap.isEmpty()) {
@@ -263,10 +300,9 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         }
 
         private String connectToURL(String url) throws IOException {
+            // Connect to Tagged server and return server's response
             URL myURL = new URL(url);
             HttpURLConnection conn = (HttpURLConnection)myURL.openConnection();
-
-            // Connect to Tagged server and return server's response
             try {
                 conn.setReadTimeout(10 * 1000); // milliseconds
                 conn.setConnectTimeout(10 * 1000); // milliseconds
@@ -300,121 +336,17 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 }
                 responseStr = taggedContent.toString();
                 conn.disconnect();
-                //Log.d(TAG, "Tagged server echoed the following response string: " + responseStr);
-                return responseStr;
             } catch (MalformedURLException e) {
                 e.printStackTrace();
-                return responseStr = "ERROR MalformedURLException caught: " + e;
+                Log.d(TAG, "ERROR MalformedURLException caught: " + e);
             } catch (IOException e) {
                 e.printStackTrace();
-                //testFlag = true;
-                return responseStr = "ERROR IOException caught: " + e;
+                Log.d(TAG, "ERROR IOException caught: " + e);
             }
+
+            Log.d(TAG, "Tagged server echoed the following response string: " + responseStr);
+            return responseStr;
         }
-    }
-
-    public Boolean verifySignature(String responseStr, String digSigHeaderName) {
-        // Extract digital signature from "responseStr"
-        // TODO Replace the code below with regex
-        Log.d(TAG, "responseStr: " + responseStr);
-        String digSig = responseStr;
-        String startIndex = "\"" + digSigHeaderName + "\":\"";
-        digSig = digSig.substring(digSig.indexOf(startIndex));
-        Log.d(TAG, digSig);
-        digSig = digSig.replace("\"" + digSigHeaderName + "\":\"", "");
-        digSig = digSig.substring(0, digSig.indexOf("\""));
-        Log.d(TAG, digSig);
-
-        // Extract Tagged server's public key from "public_key.pem" in res/raw and create PublicKey instance
-        boolean isVerified = false;
-        try {
-            InputStream is = this.getResources().openRawResource(R.raw.public_key);
-            BufferedReader br = new BufferedReader(new InputStreamReader(is));
-            StringBuilder pubKeySb = new StringBuilder();
-            String line;
-            try {
-                while ((line = br.readLine()) != null)
-                    pubKeySb.append(line);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            // Remove header and footer
-            String pubKeyStr = pubKeySb.toString();
-            pubKeyStr = pubKeyStr.replace("-----BEGIN PUBLIC KEY-----", "");
-            pubKeyStr = pubKeyStr.replace("-----END PUBLIC KEY-----", "");
-            //Log.d(TAG, "Public key string: " + pubKeyStr);
-
-            // Create Public Key instance from pubKeyStr
-            X509EncodedKeySpec spec = new X509EncodedKeySpec(Base64.decode(pubKeyStr, Base64.DEFAULT));
-            KeyFactory kf = KeyFactory.getInstance("RSA");
-            PublicKey pubKey = kf.generatePublic(spec);
-
-            // Verify digital signature from Tagged server
-            try {
-                Signature sig = Signature.getInstance("SHA256withRSA");
-                sig.initVerify(pubKey);
-
-                // "responseStr" contains the data received from Tagged server
-                // Remove the digital signature header before processing
-                String responseStrEdited = "";  // Will contain data received from Tagged server, minus the digital signature header
-                Log.d(TAG, "responseStr before removing \"" + digSigHeaderName + "\": " + responseStr);
-                // TODO change this to fit all possible locations of the digital signature header
-                responseStrEdited = responseStr.replaceAll(",\"" + digSigHeaderName + "\":.*$", "}");
-                Log.d(TAG, "responseStr after removing \"" + digSigHeaderName + "\": " + responseStrEdited);
-                sig.update(responseStrEdited.getBytes());
-                isVerified = sig.verify(Base64.decode(digSig, Base64.DEFAULT));
-                Log.d(TAG, "Signature verified?: " + isVerified);
-            } catch (SignatureException e) {
-                e.printStackTrace();
-            }
-        } catch (NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException e) {
-            e.printStackTrace();
-        }
-        return isVerified;
-    }
-
-    public TreeMap<String, String> getRequestHeaderDifference(Map<String, String> map1, Map<String, String> map2, String
-                                              digSigHeaderName) {
-        if (map1 == null) {
-            headerDifferenceInfoTv.setText("ERROR: Could not process original request headers.");
-        } else if (map2 == null ) {
-            headerDifferenceInfoTv.setText("ERROR: Could not process request headers received by Tagged server.");
-        } else {
-            // Compare maps and check difference
-            map1 = new TreeMap<>(map1);
-            TreeMap<String, String> map2Edited = new TreeMap<>(map2);
-            map2Edited.remove(digSigHeaderName);
-            Log.d(TAG, "map1 in checkRequestHeaderDifference: " + map1.toString());
-            Log.d(TAG, "map2edited (TreeMap with" + digSigHeaderName +  " removed): " + map2Edited.toString());
-
-            // Testers for the map comparison logic (when Python proxy not available)
-            //map2Edited.put("X-tagged", "mini");
-            //map2Edited.put("Happy", "hacking!");
-            //map2Edited.remove("Host");
-            //map2Edited.remove("Connection");
-            Log.d(TAG, "map2edited when manually edited: " + map2Edited.toString());
-
-            // Compare entries in each map and store those that are not present in one or the other in diffHeadersMap
-            // An entry is a key-value pair
-            // First for-loop: if map2edited does not contain an entry that is in map1, add that map1 entry to diffHeadersMap
-            // Second for-loop: if map1 does not contain an entry that is in map2edited, add that map2 entry to diffHeadersMap
-            diffHeadersMap = new TreeMap<>();
-            for (Map.Entry<String, String> map1Entry : map1.entrySet()) {
-                if (!map2Edited.entrySet().contains(map1Entry)) {
-                    diffHeadersMap.put(map1Entry.getKey(), map1Entry.getValue());
-                }
-            }
-
-            for (Map.Entry<String, String> map2EditedEntry : map2Edited.entrySet()) {
-                if (!map1.entrySet().contains(map2EditedEntry)) {
-                    diffHeadersMap.put(map2EditedEntry.getKey(), map2EditedEntry.getValue());
-                }
-            }
-
-            Log.d(TAG, "diffHeadersMap.toString(): " + diffHeadersMap.toString());
-        }
-        return diffHeadersMap;
     }
 
     protected void onStop() {
