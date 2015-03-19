@@ -48,6 +48,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import com.example.taggedlib.Tagged;
+import com.example.minnie.taggedlibrary.*;
 
 public class MainActivity extends ActionBarActivity implements View.OnClickListener {
     // Declare widgets
@@ -58,7 +59,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     Toolbar toolbar;
 
     // Tagged server variables
-    final String serverIP = "155.41.69.211"; final String serverPage = "server_v1.php";
+    final String serverIP = "155.41.105.237"; final String serverPage = "server_v1.php";
 
     String responseStr = "";
     String digSigHeaderName = "Auth";
@@ -206,7 +207,8 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             // Get public key string from PEM file in res/raw
             String pubKeyPemFile = "public_key";
             Context myContext = getApplicationContext();
-            String pubKeyStr = new Tagged().getPublicKeyString(myContext, pubKeyPemFile);
+            String pubKeyStr = new com.example.minnie.taggedlibrary.Tagged().getPublicKeyString(myContext, pubKeyPemFile);
+            //String pubKeyStr = new Tagged().getPublicKeyString(myContext, pubKeyPemFile);
             Log.d(TAG, "Public key string (pubKeyStr): " + pubKeyStr);
 
             // Get verification of signature
@@ -231,7 +233,8 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             */
 
             // Get list of request header differences between origHeadersMap and modHeadersMap
-            diffHeadersList = new Tagged().getRequestHeaderDifferenceList(origHeadersMap, modHeadersMap, digSigHeaderName);
+            diffHeadersList = new com.example.minnie.taggedlibrary.Tagged().getRequestHeaderDifferenceList(origHeadersMap, modHeadersMap, digSigHeaderName);
+            //diffHeadersList = new Tagged().getRequestHeaderDifferenceList(origHeadersMap, modHeadersMap, digSigHeaderName);
             Log.d(TAG, "Difference of headers list: " + diffHeadersList);
 
             // Set icons and text views
