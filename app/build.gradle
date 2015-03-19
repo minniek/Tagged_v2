@@ -27,7 +27,6 @@ android {
 
 dependencies {
     compile fileTree(include: '*.jar', dir: 'libs')
-    compile project(':taggedlibrary')
     compile 'com.android.support:appcompat-v7:21.0.+'
     compile 'com.google.code.gson:gson:2.2.4'
     compile 'com.google.guava:guava:18.0'

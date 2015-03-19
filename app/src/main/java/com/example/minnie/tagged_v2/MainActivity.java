@@ -42,13 +42,11 @@ import java.net.URL;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
 import com.example.taggedlib.Tagged;
-import com.example.minnie.taggedlibrary.*;
 
 public class MainActivity extends ActionBarActivity implements View.OnClickListener {
     // Declare widgets
@@ -207,8 +205,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             // Get public key string from PEM file in res/raw
             String pubKeyPemFile = "public_key";
             Context myContext = getApplicationContext();
-            String pubKeyStr = new com.example.minnie.taggedlibrary.Tagged().getPublicKeyString(myContext, pubKeyPemFile);
-            //String pubKeyStr = new Tagged().getPublicKeyString(myContext, pubKeyPemFile);
+            String pubKeyStr = new Tagged().getPublicKeyString(myContext, pubKeyPemFile);
             Log.d(TAG, "Public key string (pubKeyStr): " + pubKeyStr);
 
             // Get verification of signature
@@ -233,8 +230,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             */
 
             // Get list of request header differences between origHeadersMap and modHeadersMap
-            diffHeadersList = new com.example.minnie.taggedlibrary.Tagged().getRequestHeaderDifferenceList(origHeadersMap, modHeadersMap, digSigHeaderName);
-            //diffHeadersList = new Tagged().getRequestHeaderDifferenceList(origHeadersMap, modHeadersMap, digSigHeaderName);
+            diffHeadersList = new Tagged().getRequestHeaderDifferenceList(origHeadersMap, modHeadersMap, digSigHeaderName);
             Log.d(TAG, "Difference of headers list: " + diffHeadersList);
 
             // Set icons and text views
@@ -261,26 +257,6 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                     diffTv.append(entry + "\n");
                 }
             }
-
-            /*//TESTING getMapDifferenceList in Tagged Library
-            Map<String, Integer> map1 = new HashMap<>();
-            map1.put("Apple", 5);
-            map1.put("Banana", 8);
-            map1.put("Raspberry", 1);
-            map1.put("Blueberry", 25);
-
-            Map<String, Integer> map2 = new HashMap<>();
-            map2.put("Apple", 3);
-            map2.put("Banana", 8);
-            map2.put("Raspberry", 17);
-            map2.put("Blueberry", 25);
-            map2.put("Kiwi", 100);
-
-            ArrayList<String> s = new Tagged().getMapDifferenceList(map1, map2);
-            Collections.sort(s);
-            for (String entry : s) {
-                diffTv.append(entry + "\n");
-            }*/
         }
 
         private String connectToURL(String url) throws IOException {
