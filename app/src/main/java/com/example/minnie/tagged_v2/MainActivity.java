@@ -40,6 +40,8 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +62,8 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
     String responseStr = "";
     String digSigHeaderName = "Auth";
-    TreeMap<String, String> origHeadersMap, modHeadersMap, diffHeadersMap;
+    TreeMap<String, String> origHeadersMap, modHeadersMap;
+    ArrayList<String> diffHeadersList;
     String TAG = "Tagged_v2";
 
     @Override
@@ -155,7 +158,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             responseStr = null;
             origHeadersMap = new TreeMap<>();
             modHeadersMap = new TreeMap<>();
-            diffHeadersMap = new TreeMap<>();
+            diffHeadersList = new ArrayList<>();
 
             // Enable + show send button only
             sendBtn.setEnabled(true); sendBtn.setVisibility(View.VISIBLE);
@@ -187,21 +190,6 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 origHeaderTv.append(entry.getKey() + ": " + entry.getValue() + "\n");
             }
 
-            /*//TESTING getMapDifference in Tagged Library
-            Map<String, Integer> map1 = new HashMap<>();
-            map1.put("Apple", 5);
-            map1.put("Banana", 8);
-            map1.put("Raspberry", 1);
-
-            Map<String, Integer> map2 = new HashMap<>();
-            map2.put("Apple", 5);
-            map2.put("Banana", 8);
-            map2.put("Raspberry", 17);
-
-            Map<String, Integer> map3 = new Tagged().getMapDifference(map1, map2);
-            Log.d(TAG, "Map 3: " + map3.toString());
-            */
-
             // Make modHeadersMap from responseStr
             modHeadersMap = new TreeMap<>();
             try {
@@ -210,7 +198,6 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-
             // Set responseTv to display headers when the viewHeadersBtn is pressed
             for (Map.Entry<String, String> entry : modHeadersMap.entrySet()) {
                 responseTv.append(entry.getKey() + ": " + entry.getValue() + "\n");
@@ -226,77 +213,71 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             Boolean isVerified = new Tagged().verifySignature(pubKeyStr, responseStr, digSigHeaderName);
             Log.d(TAG, "Signature verified (isVerified)?: " + isVerified);
 
+            // Set corresponding images + text depending on isVerified value
             if (isVerified == true) {
-                // Enable + show sig verified info
-                sigVerTable.setEnabled(true); sigVerTable.setVisibility(View.VISIBLE);
                 sigVerIcon.setImageResource(R.drawable.verified_icon);
                 sigVerInfoTv.setText("Tagged server signature verified.");
-
-                // Determine if there are any header modifications
-                diffHeadersMap = new TreeMap<>();
-
-
-                /*// TESTERS (when Python proxy is not available...)
-                modHeadersMap.put("X-tagged", "mini");
-                modHeadersMap.put("Happy", "hacking!");
-                modHeadersMap.remove("Host");
-                modHeadersMap.remove("Connection");
-                */
-
-                diffHeadersMap = new Tagged().getRequestHeaderDifference(origHeadersMap, modHeadersMap, digSigHeaderName);
-                Log.d(TAG, "Difference of headers (diffHeadersMap.toString()): " + diffHeadersMap.toString());
-
-                // Set icons and text views
-                if (!diffHeadersMap.isEmpty()) {
-                    headerDiffIcon.setImageResource(R.drawable.unverified_icon);
-                    headerDifferenceInfoTv.setText("Header modification detected.");
-                } else {
-                    headerDiffIcon.setImageResource(R.drawable.verified_icon);
-                    headerDifferenceInfoTv.setText("No header modification detected.");
-                    diffTv.append("No header modifications were detected!");
-                }
-
-                // Enable view headers and start over buttons
-                viewHeadersBtn.setEnabled(true); viewHeadersBtn.setVisibility(View.VISIBLE);
-                startOverBtn.setEnabled(true); startOverBtn.setVisibility(View.VISIBLE);
-
-                // Disable + hide send button
-                sendBtn.setEnabled(false); sendBtn.setVisibility(View.INVISIBLE);
-            }
-
-            if (isVerified == false) {
-                // Enable + show sig unverified info and view headers button
-                sigVerTable.setEnabled(true); sigVerTable.setVisibility(View.VISIBLE);
+            } else if (isVerified == false) {
                 sigVerIcon.setImageResource(R.drawable.unverified_icon);
                 sigVerInfoTv.setText("Tagged server signature NOT verified.");
+            }
+            sigVerTable.setEnabled(true); sigVerTable.setVisibility(View.VISIBLE);
 
-                // Determine if there are any header modifications
-                diffHeadersMap = new TreeMap<>();
-                diffHeadersMap = new Tagged().getRequestHeaderDifference(origHeadersMap, modHeadersMap, digSigHeaderName);
-                Log.d(TAG, "Difference of headers (diffHeadersMap.toString()): " + diffHeadersMap.toString());
+            /*// TESTERS (when Python proxy is not available...)
+            modHeadersMap.put("X-tagged", "mini");
+            modHeadersMap.put("Happy", "hacking!");
+            modHeadersMap.remove("Host");
+            modHeadersMap.remove("Connection");
+            */
 
-                // Set icons and text views
-                if (!diffHeadersMap.isEmpty()) {
-                    headerDiffIcon.setImageResource(R.drawable.unverified_icon);
-                    headerDifferenceInfoTv.setText("Header modification detected.");
-                } else {
-                    headerDiffIcon.setImageResource(R.drawable.verified_icon);
-                    headerDifferenceInfoTv.setText("No header modification detected.");
-                    diffTv.append("No header modifications were detected!");
+            // Get list of request header differences between origHeadersMap and modHeadersMap
+            diffHeadersList = new Tagged().getRequestHeaderDifferenceList(origHeadersMap, modHeadersMap, digSigHeaderName);
+            Log.d(TAG, "Difference of headers list: " + diffHeadersList);
+
+            // Set icons and text views
+            if (!diffHeadersList.isEmpty()) {
+                headerDiffIcon.setImageResource(R.drawable.unverified_icon);
+                headerDifferenceInfoTv.setText("Header modification detected.");
+            } else {
+                headerDiffIcon.setImageResource(R.drawable.verified_icon);
+                headerDifferenceInfoTv.setText("No header modification detected.");
+            }
+            // Enable view headers and start over buttons
+            viewHeadersBtn.setEnabled(true); viewHeadersBtn.setVisibility(View.VISIBLE);
+            startOverBtn.setEnabled(true); startOverBtn.setVisibility(View.VISIBLE);
+
+            // Disable + hide send button
+            sendBtn.setEnabled(false); sendBtn.setVisibility(View.INVISIBLE);
+
+            // Set diffTv to display diffHeadersStr when the viewHeadersBtn is pressed
+            if (diffHeadersList.isEmpty()) {
+                diffTv.append("No header modifications were detected!");
+            } else {
+                Collections.sort(diffHeadersList);
+                for (String entry : diffHeadersList) {
+                    diffTv.append(entry + "\n");
                 }
-
-                // Enable view headers and start over buttons
-                viewHeadersBtn.setEnabled(true); viewHeadersBtn.setVisibility(View.VISIBLE);
-                startOverBtn.setEnabled(true); startOverBtn.setVisibility(View.VISIBLE);
-
-                // Disable + hide send button
-                sendBtn.setEnabled(false); sendBtn.setVisibility(View.INVISIBLE);
             }
 
-            // Set diffTv to display diffHeadersMap when the viewHeadersBtn is pressed
-            for (Map.Entry<String, String> entry : diffHeadersMap.entrySet()) {
-                diffTv.append(entry.getKey() + ": " + entry.getValue() + "\n");
-            }
+            /*//TESTING getMapDifferenceList in Tagged Library
+            Map<String, Integer> map1 = new HashMap<>();
+            map1.put("Apple", 5);
+            map1.put("Banana", 8);
+            map1.put("Raspberry", 1);
+            map1.put("Blueberry", 25);
+
+            Map<String, Integer> map2 = new HashMap<>();
+            map2.put("Apple", 3);
+            map2.put("Banana", 8);
+            map2.put("Raspberry", 17);
+            map2.put("Blueberry", 25);
+            map2.put("Kiwi", 100);
+
+            ArrayList<String> s = new Tagged().getMapDifferenceList(map1, map2);
+            Collections.sort(s);
+            for (String entry : s) {
+                diffTv.append(entry + "\n");
+            }*/
         }
 
         private String connectToURL(String url) throws IOException {
