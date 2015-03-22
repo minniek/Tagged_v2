@@ -40,11 +40,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 import com.example.taggedlib.Tagged;
 
@@ -57,7 +53,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     Toolbar toolbar;
 
     // Tagged server variables
-    final String serverIP = "155.41.105.237"; final String serverPage = "server_v1.php";
+    final String serverIP = "155.41.105.129"; final String serverPage = "server_v1.php";
 
     String responseStr = "";
     String digSigHeaderName = "Auth";
@@ -101,6 +97,19 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         startOverBtn.setEnabled(false); startOverBtn.setVisibility(View.INVISIBLE);
         sigVerTable.setEnabled(false); sigVerTable.setVisibility(View.INVISIBLE);
         headersTable.setEnabled(false); headersTable.setVisibility(View.INVISIBLE);
+
+        /*// Testbed for unimplemented Tagged library methods
+        Map<String, Integer> map1 = new HashMap<>();
+        Map<String, Integer> map2 = new HashMap<>();
+        map1.put("Key1", 1);
+        map1.put("Key2", 2);
+        map1.put("Key3", 3);
+        map2.put("Key1", 1);
+        map2.put("Key2", 2);
+        map2.put("Key3", 10);
+        ArrayList<String> diff = new Tagged().getMapDifferenceList(map1, map2);
+        Log.d(TAG, "Result of getMapDifferenceList: " + diff);
+        */
     }
 
     @Override
