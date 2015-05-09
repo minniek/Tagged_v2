@@ -9,7 +9,7 @@ android {
         exclude 'META-INF/NOTICE'
     }
     defaultConfig {
-        applicationId "com.example.minnie.tagged_v2"
+        applicationId "com.example.minnie.tagged"
         minSdkVersion 16
         targetSdkVersion 21
         versionCode 1
@@ -29,5 +29,5 @@ dependencies {
     compile fileTree(include: '*.jar', dir: 'libs')
     compile 'com.android.support:appcompat-v7:21.0.+'
     compile 'com.google.code.gson:gson:2.2.4'
-    compile 'com.google.guava:guava:18.0'
+    compile files('libs/tagged-lib-v0.0.1.jar')
 }

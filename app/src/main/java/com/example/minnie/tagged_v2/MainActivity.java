@@ -39,10 +39,13 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
-import java.util.*;
-
-import com.example.taggedlib.Tagged;
+import edu.bu.tagged.Tagged;
 
 public class MainActivity extends ActionBarActivity implements View.OnClickListener {
     // Declare widgets
@@ -50,16 +53,13 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     TextView responseTv, origHeaderTv, diffTv, sigVerInfoTv, headerDifferenceInfoTv;
     ImageView sigVerIcon, headerDiffIcon;
     TableLayout sigVerTable, headersTable;
-    Toolbar toolbar;
 
     // Tagged server variables
-    final String serverIP = "155.41.105.129"; final String serverPage = "server_v1.php";
+    final String serverIP = "155.41.13.134"; final String serverPage = "tagged_server.php";
 
-    String responseStr = "";
-    String digSigHeaderName = "Auth";
     TreeMap<String, String> origHeadersMap, modHeadersMap;
     ArrayList<String> diffHeadersList;
-    String TAG = "Tagged_v2";
+    String TAG = "Tagged_v2"; // For Log.d
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,6 +87,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         headersTable = (TableLayout)findViewById(R.id.headers_table);
 
         // Toolbar
+        Toolbar toolbar;
         toolbar = (Toolbar)findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
@@ -123,7 +124,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.about:
-                Toast.makeText(getApplicationContext(), "Source @ https://github.com/minniek/Tagged_v2", Toast.LENGTH_LONG).show();
+                Toast.makeText(MainActivity.this, "Source @ https://github.com/minniek/Tagged_v2", Toast.LENGTH_LONG).show();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -163,7 +164,6 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             diffTv.setText("");
 
             // Clear out responseStr and header objects
-            responseStr = null;
             origHeadersMap = new TreeMap<>();
             modHeadersMap = new TreeMap<>();
             diffHeadersList = new ArrayList<>();
@@ -180,19 +180,35 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     }
 
     protected class StartAsyncTask extends AsyncTask<String, Void, String> {
+        private String responseStr = "";
+        private String digSigHeaderName = "Auth";
+
         @Override
         protected String doInBackground(String... urls) {
             // Params come from the execute() call: params[0] is the url
+            // TODO Implement exception handling that actually works with AsyncTask
             try {
                 responseStr = connectToURL(urls[0]);
+                Log.d(TAG, "Length of response string in doInBackground: " + responseStr.length());
             } catch (IOException e) {
                 e.printStackTrace();
-                Log.d(TAG, "Error: could not connect to " + urls[0]);
             }
+
             return responseStr; // Return value is passed to onPostExecute()
         }
 
         protected void onPostExecute(String responseStr) {
+            // TODO Implement exception handling that actually works with AsyncTask
+            Log.d(TAG, "Response string length in onPostExecute is: " + responseStr.length());
+            if (responseStr.length() == 0) {
+                Log.d(TAG, "RESPONSE STRING LENGTH IS ZERO!");
+                try {
+                    throw new Exception();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
             // Set origHeaderTv to display original headers when the viewHeadersBtn is pressed
             for (Map.Entry<String, String> entry : origHeadersMap.entrySet()) {
                 origHeaderTv.append(entry.getKey() + ": " + entry.getValue() + "\n");
@@ -205,6 +221,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 modHeadersMap = new Gson().fromJson(modHeadersJSON.toString(), modHeadersMap.getClass());
             } catch (JSONException e) {
                 e.printStackTrace();
+                Toast.makeText(getApplicationContext(), "Error: could not create modified headers map...", Toast.LENGTH_LONG).show();
             }
             // Set responseTv to display headers when the viewHeadersBtn is pressed
             for (Map.Entry<String, String> entry : modHeadersMap.entrySet()) {
@@ -222,21 +239,14 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             Log.d(TAG, "Signature verified (isVerified)?: " + isVerified);
 
             // Set corresponding images + text depending on isVerified value
-            if (isVerified == true) {
+            if (isVerified) {
                 sigVerIcon.setImageResource(R.drawable.verified_icon);
                 sigVerInfoTv.setText("Tagged server signature verified.");
-            } else if (isVerified == false) {
+            } else {
                 sigVerIcon.setImageResource(R.drawable.unverified_icon);
                 sigVerInfoTv.setText("Tagged server signature NOT verified.");
             }
             sigVerTable.setEnabled(true); sigVerTable.setVisibility(View.VISIBLE);
-
-            /*// TESTERS (when Python proxy is not available...)
-            modHeadersMap.put("X-tagged", "mini");
-            modHeadersMap.put("Happy", "hacking!");
-            modHeadersMap.remove("Host");
-            modHeadersMap.remove("Connection");
-            */
 
             // Get list of request header differences between origHeadersMap and modHeadersMap
             diffHeadersList = new Tagged().getRequestHeaderDifferenceList(origHeadersMap, modHeadersMap, digSigHeaderName);
@@ -273,8 +283,8 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             URL myURL = new URL(url);
             HttpURLConnection conn = (HttpURLConnection)myURL.openConnection();
             try {
-                conn.setReadTimeout(10 * 1000); // milliseconds
-                conn.setConnectTimeout(10 * 1000); // milliseconds
+                conn.setReadTimeout(30 * 1000); // milliseconds
+                conn.setConnectTimeout(30 * 1000); // milliseconds
 
                 // Set request headers, and then create TreeMap using getRequestProperties()
                 // NOTE: addRequestProperty() method does NOT override existing values
@@ -314,6 +324,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             }
 
             Log.d(TAG, "Tagged server echoed the following response string: " + responseStr);
+            Log.d(TAG, "Length of response string in end of connectToUrl: " + responseStr.length());
             return responseStr;
         }
     }
